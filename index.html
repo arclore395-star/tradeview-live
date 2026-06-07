@@ -2,94 +2,109 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>BlockWorld — Build & Explore</title>
+<title>Block Arcade — Minigames</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#000;font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;user-select:none;}
 canvas{display:block;}
-#ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20;}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20;color:#fff;}
 #crosshair{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-size:24px;color:rgba(255,255,255,0.4);
-  pointer-events:none;text-shadow:0 0 4px rgba(0,0,0,0.5);
+  font-size:20px;color:rgba(255,255,255,0.3);pointer-events:none;
 }
-#toolbar{
-  position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
-  display:flex;gap:4px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);
-  padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
-  pointer-events:auto;
-}
-#toolbar .slot{
-  width:44px;height:44px;border:2px solid rgba(255,255,255,0.1);border-radius:6px;
-  cursor:pointer;transition:0.15s;position:relative;
-}
-#toolbar .slot:hover{border-color:rgba(255,255,255,0.3);}
-#toolbar .slot.active{border-color:#0af;background:rgba(0,170,255,0.15);}
-#toolbar .slot .swatch{width:28px;height:28px;border-radius:4px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
-#info{
+#hud{
   position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  color:rgba(255,255,255,0.5);font-size:12px;text-align:center;
-  background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);
-  padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);
-  pointer-events:none;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);padding:6px 16px;
+  border-radius:8px;border:1px solid rgba(255,255,255,0.08);
+  font-size:12px;text-align:center;pointer-events:none;
 }
-#stats{
+#hud .title{font-size:14px;font-weight:600;color:#0af;margin-bottom:2px;}
+#hud .sub{color:rgba(255,255,255,0.5);}
+#hud .timer{font-size:24px;font-weight:300;color:#0f0;font-family:monospace;}
+#gameOver{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.6);z-index:30;backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;flex-direction:column;
+}
+#gameOver .big{font-size:48px;font-weight:300;margin-bottom:8px;text-shadow:0 0 30px rgba(0,170,255,0.3);}
+#gameOver .sm{font-size:16px;color:rgba(255,255,255,0.5);margin-bottom:20px;}
+#gameOver button{
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+  color:#fff;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;
+  pointer-events:auto;transition:0.15s;
+}
+#gameOver button:hover{background:rgba(0,170,255,0.2);border-color:#0af;}
+#interact{
+  position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);
+  padding:8px 20px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);
+  font-size:13px;display:none;pointer-events:none;
+}
+#interact .key{color:#0af;font-weight:600;}
+#topRight{
   position:absolute;top:12px;right:12px;
-  color:rgba(255,255,255,0.4);font-size:11px;font-family:monospace;
-  background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);
-  padding:6px 10px;border-radius:6px;
-  pointer-events:none;text-align:right;line-height:1.6;
+  font-size:11px;font-family:monospace;text-align:right;line-height:1.6;
+  background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:6px 10px;border-radius:6px;
+  pointer-events:none;color:rgba(255,255,255,0.5);
 }
 #loading{
   position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e1a;z-index:100;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#0af;font-family:'Inter',sans-serif;transition:opacity 0.8s;
+  color:#0af;transition:opacity 0.8s;font-family:'Inter',sans-serif;
 }
 #loading h1{font-size:42px;font-weight:300;letter-spacing:4px;text-shadow:0 0 40px rgba(0,170,255,0.3);}
 #loading .sub{font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:6px;text-transform:uppercase;margin-top:4px;}
 #loading .bar{width:320px;height:2px;background:rgba(0,170,255,0.1);border-radius:2px;margin-top:24px;overflow:hidden;}
 #loading .bar-inner{width:0%;height:100%;background:#0af;transition:width 0.3s;border-radius:2px;}
-@media(max-width:700px){
-  #toolbar .slot{width:36px;height:36px;}
-  #toolbar .slot .swatch{width:22px;height:22px;}
-  #stats{font-size:10px;}
-}
 </style>
 </head>
 <body>
 <div id="loading">
-  <h1>BLOCKWORLD</h1>
-  <div class="sub">Build & Explore</div>
+  <h1>BLOCK ARCADE</h1>
+  <div class="sub">Minigames</div>
   <div class="bar"><div class="bar-inner" id="loadBar"></div></div>
 </div>
 <div id="ui" style="display:none;">
-  <div id="info">WASD Move · Space Jump · Mouse Look · Click Place · Shift+Click Remove · 1-5 Select Block</div>
-  <div id="stats">FPS: --</div>
   <div id="crosshair">+</div>
-  <div id="toolbar"></div>
+  <div id="hud">
+    <div class="title" id="hudTitle">LOBBY</div>
+    <div class="sub" id="hudSub">Explore & find a game portal!</div>
+  </div>
+  <div id="topRight" id="topRightEl">FPS: --</div>
+  <div id="interact">Press <span class="key">E</span> to play</div>
+</div>
+<div id="gameOver">
+  <div class="big" id="goTitle">GAME OVER</div>
+  <div class="sm" id="goSub"></div>
+  <button onclick="backToLobby()">Back to Lobby</button>
 </div>
 <script>
-// ══ BLOCK TYPES ═══════════════════════════════════════════════
-const BLOCK_TYPES=[
-  {name:'Grass',color:0x5da130},
-  {name:'Dirt',color:0x8b5a2b},
-  {name:'Stone',color:0x808080},
-  {name:'Wood',color:0xc4883c},
-  {name:'Brick',color:0xb84444},
-  {name:'Water',color:0x4488cc},
-  {name:'Gold',color:0xffaa00},
-  {name:'Snow',color:0xe8e8f0},
-];
-let selectedBlock=0;
-const BLOCK_SIZE=4;
+// ══ CONSTANTS ════════════════════════════════════════════════
+const GRAVITY=-30;
+const MOVE_SPEED=12;
+const JUMP_FORCE=11;
+const BLOCK=3;
+
+// ══ STATE ════════════════════════════════════════════════════
+let gameMode='lobby'; // lobby, obby, lava, speedrun
+let isLocked=false;
+const keys={};
+let dt=0;
+
+// Player physics
+const player={
+  x:0,y:3,z:0,
+  vx:0,vy:0,vz:0,
+  onGround:false,speed:MOVE_SPEED,jump:JUMP_FORCE,
+  yaw:0,pitch:0,
+};
 
 // ══ SCENE ══════════════════════════════════════════════════════
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x7ec8e3);
-scene.fog=new THREE.Fog(0x7ec8e3,200,500);
 
-const cam=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,1000);
+const cam=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,500);
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth,window.innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -99,299 +114,605 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.0;
 document.body.prepend(renderer.domElement);
 
-const amb=new THREE.AmbientLight(0x99bbdd,0.4);
+const amb=new THREE.AmbientLight(0x99bbdd,0.55);
 scene.add(amb);
-const sun=new THREE.DirectionalLight(0xffeedd,1.5);
-sun.position.set(100,200,80);
+const sun=new THREE.DirectionalLight(0xffeedd,1.4);
+sun.position.set(80,150,60);
 sun.castShadow=true;
 sun.shadow.mapSize.width=2048;sun.shadow.mapSize.height=2048;
-sun.shadow.camera.near=1;sun.shadow.camera.far=400;
-sun.shadow.camera.left=-200;sun.shadow.camera.right=200;
-sun.shadow.camera.top=200;sun.shadow.camera.bottom=-200;
+sun.shadow.camera.near=1;sun.shadow.camera.far=300;
+sun.shadow.camera.left=-150;sun.shadow.camera.right=150;
+sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;
 scene.add(sun);
-const hemi=new THREE.HemisphereLight(0x87ceeb,0x6b4423,0.5);
+const hemi=new THREE.HemisphereLight(0x87ceeb,0x6b4423,0.4);
 scene.add(hemi);
 
-// ══ TERRAIN (flat grass with hills) ═══════════════════════════
-const T_SIZE=300,T_SEG=80;
-function buildTerrain(){
-  const geo=new THREE.PlaneGeometry(T_SIZE,T_SIZE,T_SEG,T_SEG);
-  geo.rotateX(-Math.PI/2);
-  const pos=geo.attributes.position;
-  const cols=new Float32Array(pos.count*3);
-  for(let i=0;i<pos.count;i++){
-    const x=pos.getX(i),z=pos.getZ(i);
-    const h=Math.sin(x*0.02)*Math.cos(z*0.025)*3
-      +Math.sin(x*0.05+z*0.04)*1.5
-      +Math.cos(x*0.08-z*0.06)*0.8;
-    const rh=Math.max(h,-2);
-    pos.setY(i,rh);
-    let r,g,b;
-    if(rh<-0.5){
-      r=0.2;g=0.25;b=0.15;
-    }else if(rh<4){
-      const t=(rh+0.5)/4.5;
-      r=0.2+t*0.25;g=0.35+t*0.3;b=0.07;
-    }else{
-      r=0.45;g=0.55;b=0.15;
+// ══ LOBBY ════════════════════════════════════════════════════
+const lobbyObjects=[];
+
+function buildLobby(){
+  const group=new THREE.Group();
+
+  // Floor
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(120,120).rotateX(-Math.PI/2),
+    new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})
+  );
+  floor.receiveShadow=true;
+  group.add(floor);
+
+  // Platform
+  const plat=new THREE.Mesh(
+    new THREE.CylinderGeometry(25,25,2,24),
+    new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.5})
+  );
+  plat.position.y=1;plat.receiveShadow=true;plat.castShadow=true;
+  group.add(plat);
+
+  // Center pillar
+  const pillar=new THREE.Mesh(
+    new THREE.CylinderGeometry(1,1.5,20,8),
+    new THREE.MeshStandardMaterial({color:0x888888,roughness:0.6})
+  );
+  pillar.position.y=11;
+  group.add(pillar);
+
+  // Sphere on top
+  const sphere=new THREE.Mesh(
+    new THREE.SphereGeometry(3,16,16),
+    new THREE.MeshStandardMaterial({color:0x0af,roughness:0.1,metalness:0.3})
+  );
+  sphere.position.y=22;
+  group.add(sphere);
+
+  // Portals: 3 around the platform
+  const portalColors=[0xff4444,0xff8800,0x44ff44];
+  const portalGames=['obby','lava','speedrun'];
+  const portalLabels=['OBBY','LAVA','SPEED'];
+
+  portalColors.forEach((color,i)=>{
+    const angle=(i/3)*Math.PI*2;
+    const px=Math.sin(angle)*18;
+    const pz=Math.cos(angle)*18;
+
+    // Portal frame
+    const frame=new THREE.Mesh(
+      new THREE.BoxGeometry(0.5,6,0.5),
+      new THREE.MeshStandardMaterial({color:0x444444,roughness:0.5})
+    );
+    for(let dy of[-2.5,2.5]){
+      const f=frame.clone();
+      f.position.set(px,dy+2,pz);
+      group.add(f);
     }
-    cols[i*3]=r;cols[i*3+1]=g;cols[i*3+2]=b;
-  }
-  geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
-  geo.computeVertexNormals();
-  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
-    vertexColors:true,roughness:0.85,metalness:0.0
-  }));
-  mesh.receiveShadow=true;
-  scene.add(mesh);
-  return mesh;
-}
-buildTerrain();
+    const topBar=new THREE.Mesh(
+      new THREE.BoxGeometry(4,0.5,0.5),
+      new THREE.MeshStandardMaterial({color:0x444444,roughness:0.5})
+    );
+    topBar.position.set(px,5.5,pz);
+    group.add(topBar);
 
-function getTerrainHeight(x,z){
-  return Math.max(
-    Math.sin(x*0.02)*Math.cos(z*0.025)*3
-    +Math.sin(x*0.05+z*0.04)*1.5
-    +Math.cos(x*0.08-z*0.06)*0.8
-  ,-2);
-}
+    // Portal glow
+    const glow=new THREE.Mesh(
+      new THREE.PlaneGeometry(3.5,5.5),
+      new THREE.MeshBasicMaterial({color:portalColors[i],transparent:true,opacity:0.3,side:THREE.DoubleSide})
+    );
+    glow.position.set(px,2.5,pz);
+    group.add(glow);
 
-// ══ WATER ═════════════════════════════════════════════════════
-const water=new THREE.Mesh(
-  new THREE.PlaneGeometry(600,600).rotateX(-Math.PI/2),
-  new THREE.MeshPhysicalMaterial({
-    color:0x4488cc,transparent:true,opacity:0.6,
-    roughness:0.05,metalness:0.0,clearcoat:0.2
-  })
-);
-water.position.set(0,-1,0);
-scene.add(water);
+    // Portal label
+    const canvas=document.createElement('canvas');
+    canvas.width=128;canvas.height=32;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='rgba(0,0,0,0)';ctx.fillRect(0,0,128,32);
+    ctx.fillStyle='#'+portalColors[i].toString(16).padStart(6,'0');
+    ctx.font='bold 20px monospace';ctx.textAlign='center';
+    ctx.fillText(portalLabels[i],64,22);
+    const labelTex=new THREE.CanvasTexture(canvas);
+    const label=new THREE.Mesh(
+      new THREE.PlaneGeometry(3,0.8),
+      new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide})
+    );
+    label.position.set(px,6.2,pz);
+    group.add(label);
 
-// ══ BLOCKS (chunk management) ════════════════════════════════
-const blocks=new Map(); // key: "x,y,z"
-const placedMeshes=new Map();
-const blockGeo=new THREE.BoxGeometry(BLOCK_SIZE,BLOCK_SIZE,BLOCK_SIZE);
-const tempBlockGeo=new THREE.BoxGeometry(BLOCK_SIZE*1.01,BLOCK_SIZE*1.01,BLOCK_SIZE*1.01);
-
-function blockKey(x,y,z){return Math.round(x)+','+Math.round(y)+','+Math.round(z);}
-
-function placeBlock(x,y,z,type){
-  const key=blockKey(x,y,z);
-  if(blocks.has(key))return;
-  blocks.set(key,type);
-  const mat=new THREE.MeshStandardMaterial({
-    color:BLOCK_TYPES[type].color,
-    roughness:0.6,metalness:type===6?0.5:0
+    // Store portal info for interaction
+    group.userData.portals=group.userData.portals||[];
+    group.userData.portals.push({pos:{x:px,y:2.5,z:pz},game:portalGames[i],color:portalColors[i]});
   });
-  const mesh=new THREE.Mesh(blockGeo,mat);
-  mesh.position.set(x*BLOCK_SIZE,y*BLOCK_SIZE+BLOCK_SIZE/2,z*BLOCK_SIZE);
-  mesh.castShadow=true;mesh.receiveShadow=true;
-  scene.add(mesh);
-  placedMeshes.set(key,mesh);
+
+  // Spawn point
+  group.userData.spawn={x:0,y:2,z:20};
+
+  return group;
 }
 
-function removeBlock(x,y,z){
-  const key=blockKey(x,y,z);
-  if(!blocks.has(key))return;
-  const mesh=placedMeshes.get(key);
-  if(mesh){scene.remove(mesh);}
-  blocks.delete(key);
-  placedMeshes.delete(key);
-}
+let lobby=null;
+let portalMeshes=[];
 
-// Ground layer
-for(let x=-40;x<=40;x++){
-  for(let z=-40;z<=40;z++){
-    const h=Math.round(getTerrainHeight(x*BLOCK_SIZE,z*BLOCK_SIZE)/BLOCK_SIZE);
-    placeBlock(x,0,z,0);
-    if(Math.random()<0.3&&h>0){
-      placeBlock(x,h,z,1);
+function initLobby(){
+  if(lobby)scene.remove(lobby);
+  lobby=buildLobby();
+  scene.add(lobby);
+  // Collect portal meshes for raycasting
+  portalMeshes=[];
+  lobby.children.forEach(c=>{
+    if(c.geometry&&c.material&&c.material.color){
+      portalMeshes.push(c);
     }
-    // Water blocks
-    if(h<0&&Math.random()<0.5){
-      placeBlock(x,-1,z,5);
+  });
+  player.x=0;player.y=3;player.z=20;
+  player.vx=0;player.vy=0;player.vz=0;
+  gameMode='lobby';
+  document.getElementById('hudTitle').textContent='LOBBY';
+  document.getElementById('hudSub').textContent='Walk through a portal to play!';
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('ui').style.display='block';
+}
+
+// ══ OBBY ═════════════════════════════════════════════════════
+let obbyObjects=[];
+let obbyLava=null;
+let obbyFinished=false;
+
+function buildObby(){
+  const group=new THREE.Group();
+
+  // Ground (death zone)
+  const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(200,20).rotateX(-Math.PI/2),
+    new THREE.MeshStandardMaterial({color:0xcc4444,roughness:0.8})
+  );
+  ground.position.set(0,-1,0);
+  group.add(ground);
+
+  // Lava particles (red glowing floor)
+  obbyLava=new THREE.Mesh(
+    new THREE.PlaneGeometry(200,20).rotateX(-Math.PI/2),
+    new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.3})
+  );
+  obbyLava.position.set(0,0,0);
+  group.add(obbyLava);
+
+  // Starting platform
+  const start=new THREE.Mesh(
+    new THREE.BoxGeometry(8,1,6),
+    new THREE.MeshStandardMaterial({color:0x44aa44,roughness:0.6})
+  );
+  start.position.set(0,1,-5);
+  group.add(start);
+
+  // Obstacle course
+  const levels=[
+    // Simple platforms
+    {x:-15,z:-2,w:4,d:4},
+    {x:-25,z:-2,w:4,d:4},
+    {x:-35,z:-2,w:4,d:4},
+    {x:-42,z:-2,w:8,d:4},
+    // Jump over gap
+    {x:-50,z:-2,w:3,d:4},
+    {x:-58,z:-2,w:3,d:4},
+    // Spinning bar area - narrow
+    {x:-68,z:-2,w:4,d:3},
+    {x:-76,z:-2,w:3,d:3},
+    {x:-84,z:-2,w:4,d:3},
+    // Stairs up
+    {x:-92,z:-2,w:6,d:4,h:2},
+    {x:-92,z:-2,w:6,d:4,h:3},
+    {x:-92,z:-2,w:6,d:4,h:4},
+    // Final platform
+    {x:-100,z:-2,w:10,d:6},
+  ];
+
+  levels.forEach((l,i)=>{
+    const h=l.h||1;
+    const plat=new THREE.Mesh(
+      new THREE.BoxGeometry(l.w,h,l.d),
+      new THREE.MeshStandardMaterial({
+        color:new THREE.Color().setHSL(0.1+i*0.05,0.6,0.5),
+        roughness:0.5
+      })
+    );
+    plat.position.set(l.x,h/2,l.z);
+    plat.castShadow=true;plat.receiveShadow=true;
+    group.add(plat);
+    group.userData.platforms=group.userData.platforms||[];
+    group.userData.platforms.push({x:l.x,y:h,z:l.z,w:l.w,d:l.d});
+  });
+
+  // Spinning bars (visual)
+  for(let i=0;i<4;i++){
+    const bar=new THREE.Mesh(
+      new THREE.BoxGeometry(6,0.3,0.3),
+      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5})
+    );
+    const bx=-55+i*8;
+    bar.position.set(bx,2.5,-2);
+    group.add(bar);
+  }
+
+  // Finish line
+  const fin=new THREE.Mesh(
+    new THREE.BoxGeometry(12,0.5,6),
+    new THREE.MeshBasicMaterial({color:0x00ff44,transparent:true,opacity:0.5})
+  );
+  fin.position.set(-103,1.5,-2);
+  group.add(fin);
+
+  const finPost=new THREE.Mesh(
+    new THREE.BoxGeometry(0.5,4,0.5),
+    new THREE.MeshStandardMaterial({color:0xffcc00})
+  );
+  finPost.position.set(-103,3,-5);
+  group.add(finPost);
+
+  group.userData.spawn={x:0,y:2,z:-5};
+  group.userData.finish={x:-103,z:-2};
+  return group;
+}
+
+let obbyGroup=null;
+
+function initObby(){
+  clearGame();
+  obbyGroup=buildObby();
+  scene.add(obbyGroup);
+  const sp=obbyGroup.userData.spawn;
+  player.x=sp.x;player.y=sp.y;player.z=sp.z;
+  player.vx=0;player.vy=0;player.vz=0;
+  gameMode='obby';
+  obbyFinished=false;
+  document.getElementById('hudTitle').textContent='OBBY';
+  document.getElementById('hudSub').textContent='Reach the finish line!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateObby(){
+  if(!obbyGroup)return;
+  // Respawn if falling
+  if(player.y<-10){
+    const sp=obbyGroup.userData.spawn;
+    player.x=sp.x;player.y=sp.y;player.z=sp.z;
+    player.vx=0;player.vy=0;player.vz=0;
+  }
+  // Check finish
+  const fin=obbyGroup.userData.finish;
+  if(player.x<fin.x-1&&Math.abs(player.z-fin.z)<4){
+    if(!obbyFinished){
+      obbyFinished=true;
+      document.getElementById('goTitle').textContent='YOU WIN!';
+      document.getElementById('goSub').textContent='You completed the obby!';
+      document.getElementById('gameOver').style.display='flex';
     }
   }
-}
-
-// Pre-build structures
-// House
-const houseX=15,houseZ=10;
-for(let x=0;x<6;x++)for(let z=0;z<5;z++){
-  placeBlock(houseX+x,1,houseZ+z,3);
-  if(x===0||x===5||z===0||z===4){
-    for(let y=2;y<5;y++)placeBlock(houseX+x,y,houseZ+z,3);
-  }
-}
-// Roof (red brick)
-for(let x=-1;x<7;x++)for(let z=-1;z<6;z++){
-  placeBlock(houseX+x,5,houseZ+z,4);
-  placeBlock(houseX+x,6,houseZ+z,4);
-}
-// Door
-placeBlock(houseX+3,1,houseZ+4,7);
-
-// Tower
-const towerX=-20,towerZ=15;
-for(let x=0;x<4;x++)for(let z=0;z<4;z++){
-  for(let y=1;y<12;y++){
-    if(x>0&&x<3&&z>0&&z<3&&y<11)continue;
-    placeBlock(towerX+x,y,towerZ+z,2);
+  // Animate lava
+  if(obbyLava){
+    obbyLava.material.opacity=0.2+Math.sin(Date.now()*0.003)*0.15;
   }
 }
 
-// Trees
-function makeTree(bx,bz){
-  const hh=Math.round(getTerrainHeight(bx*BLOCK_SIZE,bz*BLOCK_SIZE)/BLOCK_SIZE)+1;
-  const trunkH=2+Math.random()*2|0;
-  for(let y=0;y<trunkH;y++)placeBlock(bx,hh+y,bz,3);
-  const crown=2+(Math.random()*2|0);
-  for(let dx=-crown;dx<=crown;dx++)for(let dz=-crown;dz<=crown;dz++){
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if(dist>crown+0.5)continue;
-    const cy=hh+trunkH-1+Math.round((1-dist/(crown+1))*crown);
-    const h2=getTerrainHeight((bx+dx)*BLOCK_SIZE,(bz+dz)*BLOCK_SIZE);
-    placeBlock(bx+dx,cy,bz+dz,0);
+// ══ FLOOR IS LAVA ════════════════════════════════════════════
+let lavaObjects=[];
+let lavaPlatforms=[];
+let lavaRise=0;
+let lavaTimer=0;
+let lavaSafe=false;
+let lavaScore=0;
+
+function buildLava(){
+  const group=new THREE.Group();
+
+  // Room floor
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(60,60).rotateX(-Math.PI/2),
+    new THREE.MeshStandardMaterial({color:0x444444,roughness:0.9})
+  );
+  floor.position.y=-0.5;
+  group.add(floor);
+
+  // Walls
+  for(let side of[-1,1]){
+    const wall=new THREE.Mesh(
+      new THREE.BoxGeometry(60,8,0.5),
+      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.7})
+    );
+    wall.position.set(0,4,side*30);
+    group.add(wall);
+    const wall2=new THREE.Mesh(
+      new THREE.BoxGeometry(0.5,8,60),
+      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.7})
+    );
+    wall2.position.set(side*30,4,0);
+    group.add(wall2);
   }
-}
-for(let i=0;i<50;i++){
-  const bx=-30+Math.random()*60|0,bz=-30+Math.random()*60|0;
-  if(Math.abs(bx)<4&&Math.abs(bz)<4)continue;
-  if(Math.abs(bx-houseX)<8&&Math.abs(bz-houseZ)<8)continue;
-  if(Math.abs(bx-towerX)<6&&Math.abs(bz-towerZ)<6)continue;
-  makeTree(bx,bz);
+
+  // The lava
+  const lavaMat=new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.6});
+  const lava=new THREE.Mesh(new THREE.PlaneGeometry(58,58).rotateX(-Math.PI/2),lavaMat);
+  lava.position.y=-0.3;
+  group.add(lava);
+  group.userData.lava=lava;
+
+  // Generate platforms
+  const platColors=[0x44aa44,0x4488cc,0xcc8844,0xaa44cc];
+  const platforms=[];
+  for(let i=0;i<20;i++){
+    const px=(Math.random()-0.5)*40;
+    const pz=(Math.random()-0.5)*40;
+    const pw=2+Math.random()*3;
+    const pd=2+Math.random()*3;
+    const ph=1+Math.random()*2;
+    const plat=new THREE.Mesh(
+      new THREE.BoxGeometry(pw,ph,pd),
+      new THREE.MeshStandardMaterial({
+        color:platColors[i%platColors.length],
+        roughness:0.6
+      })
+    );
+    plat.position.set(px,ph/2,pz);
+    plat.castShadow=true;
+    group.add(plat);
+    platforms.push({x:px,z:pz,w:pw,d:pd,h:ph,mesh:plat});
+  }
+
+  // Starting safe zone
+  const safe=new THREE.Mesh(
+    new THREE.BoxGeometry(8,1,8),
+    new THREE.MeshStandardMaterial({color:0x44aa44,roughness:0.5})
+  );
+  safe.position.set(0,0.5,0);
+  group.add(safe);
+
+  group.userData.spawn={x:0,y:2,z:0};
+  group.userData.platforms=platforms;
+  group.userData.safeZone={x:0,z:0,w:8,d:8};
+  return group;
 }
 
-// Bridge
-const brX=5,brZ=-25;
-for(let x=0;x<8;x++){
-  for(let z=0;z<3;z++){
-    placeBlock(brX+x,1,brZ+z,2);
-    if((x===0||x===7)){
-      for(let y=2;y<4;y++)placeBlock(brX+x,y,brZ+z,2);
+let lavaGroup=null;
+let lavaRiseTarget=0;
+
+function initLava(){
+  clearGame();
+  lavaGroup=buildLava();
+  scene.add(lavaGroup);
+  const sp=lavaGroup.userData.spawn;
+  player.x=sp.x;player.y=sp.y;player.z=sp.z;
+  player.vx=0;player.vy=0;player.vz=0;
+  gameMode='lava';
+  lavaRise=0;
+  lavaRiseTarget=0;
+  lavaTimer=0;
+  lavaScore=0;
+  lavaSafe=true;
+  document.getElementById('hudTitle').textContent='FLOOR IS LAVA';
+  document.getElementById('hudSub').textContent='Stay on platforms!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateLava(){
+  if(!lavaGroup)return;
+  lavaTimer+=dt;
+
+  // Every 4 seconds, raise lava and remove some platforms
+  if(lavaTimer>4){
+    lavaTimer=0;
+    lavaRiseTarget+=0.8;
+    lavaScore++;
+
+    // Remove 2 random platforms
+    const plats=lavaGroup.userData.platforms;
+    for(let r=0;r<2&&plats.length>5;r++){
+      const idx=Math.floor(Math.random()*plats.length);
+      const p=plats.splice(idx,1)[0];
+      if(p&&p.mesh)lavaGroup.remove(p.mesh);
+    }
+
+    // Add some new platforms higher up
+    for(let i=0;i<3;i++){
+      const px=(Math.random()-0.5)*40;
+      const pz=(Math.random()-0.5)*40;
+      const pw=1.5+Math.random()*2.5;
+      const pd=1.5+Math.random()*2.5;
+      const ph=1+Math.random()*2;
+      const plat=new THREE.Mesh(
+        new THREE.BoxGeometry(pw,ph,pd),
+        new THREE.MeshStandardMaterial({
+          color:new THREE.Color().setHSL(Math.random(),0.6,0.5),
+          roughness:0.6
+        })
+      );
+      const py=lavaRiseTarget+ph/2+1+Math.random()*2;
+      plat.position.set(px,py,pz);
+      plat.castShadow=true;
+      lavaGroup.add(plat);
+      plats.push({x:px,z:pz,w:pw,d:pd,h:ph,mesh:plat,y:py});
     }
   }
-}
 
-// ══ CHARACTER ═════════════════════════════════════════════════
-const charGroup=new THREE.Group();
-const bodyMat=new THREE.MeshStandardMaterial({color:0x44aa44,roughness:0.5});
-const headMat=new THREE.MeshStandardMaterial({color:0xffcc99,roughness:0.5});
-const limbMat=new THREE.MeshStandardMaterial({color:0x3366cc,roughness:0.5});
-const eyeMat=new THREE.MeshBasicMaterial({color:0x222222});
-
-// Body
-const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.6,0.8),bodyMat);
-body.position.y=1.2;
-charGroup.add(body);
-
-// Head
-const head=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),headMat);
-head.position.y=2.2;
-charGroup.add(head);
-
-// Eyes
-for(let side of[-1,1]){
-  const eye=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.15,0.1),eyeMat);
-  eye.position.set(side*0.25,2.3,0.5);
-  charGroup.add(eye);
-}
-
-// Arms
-for(let side of[-1,1]){
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(0.3,1.2,0.3),limbMat);
-  arm.position.set(side*0.8,1.4,0);
-  arm.rotation.z=side*0.15;
-  charGroup.add(arm);
-}
-
-// Legs
-for(let side of[-1,1]){
-  const leg=new THREE.Mesh(new THREE.BoxGeometry(0.35,1,0.35),new THREE.MeshStandardMaterial({color:0x224488,roughness:0.5}));
-  leg.position.set(side*0.3,0.5,0);
-  charGroup.add(leg);
-}
-
-charGroup.position.set(0,2,0);
-scene.add(charGroup);
-
-// Character physics
-const charState={
-  x:0,z:0,y:2,
-  vx:0,vz:0,vy:0,
-  onGround:false,
-  speed:12,jumpForce:10,
-};
-
-// ══ CAMERA CONTROL (third person orbit) ══════════════════════
-let camTheta=0,camPhi=0.5,camDist=10;
-let isPointerLocked=false;
-let mouseDown=false,lastMX=0,lastMY=0;
-
-// ══ BLOCK TARGETING ══════════════════════════════════════════
-const raycaster=new THREE.Raycaster();
-const mouse=new THREE.Vector2();
-
-function getBlockAt(x,y,z){
-  return blocks.get(blockKey(x,y,z));
-}
-
-// Highlight mesh for targeted block
-const highlightMat=new THREE.MeshBasicMaterial({
-  color:0xffffff,transparent:true,opacity:0.2,wireframe:true
-});
-let highlightMesh=null;
-
-function updateTargeting(){
-  if(!isPointerLocked){
-    if(highlightMesh){scene.remove(highlightMesh);highlightMesh=null;}
-    return;
+  // Animate lava rising
+  lavaRise+=(lavaRiseTarget-lavaRise)*dt*2;
+  const lavaMesh=lavaGroup.userData.lava;
+  if(lavaMesh){
+    lavaMesh.position.y=lavaRise-0.3;
+    lavaMesh.material.opacity=0.4+Math.sin(Date.now()*0.005)*0.2;
   }
-  raycaster.setFromCamera({x:0,y:0},cam);
-  const allMeshes=[];
-  placedMeshes.forEach(m=>allMeshes.push(m));
-  const hits=raycaster.intersectObjects(allMeshes);
-  if(hits.length>0){
-    const hit=hits[0];
-    const pos=hit.object.position;
-    const bx=Math.round(pos.x/BLOCK_SIZE);
-    const by=Math.round((pos.y-BLOCK_SIZE/2)/BLOCK_SIZE);
-    const bz=Math.round(pos.z/BLOCK_SIZE);
-    const normal=hit.face.normal;
-    // For build mode, show the adjacent block position
-    const nx=bx+Math.round(normal.x);
-    const ny=by+Math.round(normal.y);
-    const nz=bz+Math.round(normal.z);
-    if(!highlightMesh){
-      highlightMesh=new THREE.Mesh(tempBlockGeo,highlightMat);
-      scene.add(highlightMesh);
+
+  // Check if player is on a platform
+  let onPlat=false;
+  const plats=lavaGroup.userData.platforms;
+  for(const p of plats){
+    if(player.x>p.x-p.w/2&&player.x<p.x+p.w/2&&
+       player.z>p.z-p.d/2&&player.z<p.z+p.d/2&&
+       Math.abs(player.y-(p.y||p.h+0.5))<1.5){
+      onPlat=true;break;
     }
-    highlightMesh.position.set(nx*BLOCK_SIZE,ny*BLOCK_SIZE+BLOCK_SIZE/2,nz*BLOCK_SIZE);
-  }else{
-    if(highlightMesh){scene.remove(highlightMesh);highlightMesh=null;}
+  }
+
+  // Check safe zone
+  const safe=lavaGroup.userData.safeZone;
+  if(Math.abs(player.x-safe.x)<safe.w/2&&Math.abs(player.z-safe.z)<safe.d/2){
+    onPlat=true;
+  }
+
+  // Touch lava = game over
+  if(!onPlat&&player.y<lavaRise+0.5&&!player.onGround){
+    endLavaGame();
+  }
+  // Also check if fell through
+  if(player.y<-5){
+    endLavaGame();
+  }
+
+  document.getElementById('hudSub').textContent=`Score: ${lavaScore} | Platforms: ${lavaGroup.userData.platforms.length}`;
+}
+
+function endLavaGame(){
+  document.getElementById('goTitle').textContent='GAME OVER';
+  document.getElementById('goSub').textContent=`You survived ${lavaScore} rounds!`;
+  document.getElementById('gameOver').style.display='flex';
+}
+
+// ══ SPEEDRUN ═════════════════════════════════════════════════
+let speedGroup=null;
+let speedCheckpoints=[];
+let speedNextCP=0;
+let speedStartTime=0;
+let speedFinished=false;
+
+function buildSpeedrun(){
+  const group=new THREE.Group();
+
+  // Ground
+  const ground=new THREE.Mesh(
+    new THREE.PlaneGeometry(200,30).rotateX(-Math.PI/2),
+    new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})
+  );
+  ground.position.y=-0.5;
+  group.add(ground);
+
+  // Course: path with checkpoints
+  const cpPositions=[
+    {x:0,z:0},{x:-15,z:0},{x:-30,z:3},{x:-40,z:-2},
+    {x:-50,z:4},{x:-60,z:-3},{x:-70,z:2},{x:-80,z:-2},
+    {x:-90,z:3},{x:-100,z:0},
+  ];
+
+  cpPositions.forEach((p,i)=>{
+    const h=1;
+    const plat=new THREE.Mesh(
+      new THREE.BoxGeometry(5,h,5),
+      new THREE.MeshStandardMaterial({
+        color:i===cpPositions.length-1?0x00ff44:0x4488cc,
+        roughness:0.5
+      })
+    );
+    plat.position.set(p.x,h/2,p.z);
+    plat.castShadow=true;
+    group.add(plat);
+
+    // Checkpoint marker (floating)
+    const marker=new THREE.Mesh(
+      new THREE.BoxGeometry(0.3,2,0.3),
+      new THREE.MeshBasicMaterial({color:0xffcc00})
+    );
+    marker.position.set(p.x,2.5,p.z);
+    group.add(marker);
+    const markerTop=new THREE.Mesh(
+      new THREE.SphereGeometry(0.3,6,6),
+      new THREE.MeshBasicMaterial({color:i===cpPositions.length-1?0x00ff44:0xffcc00})
+    );
+    markerTop.position.set(p.x,3.5,p.z);
+    group.add(markerTop);
+
+    group.userData.checkpoints=group.userData.checkpoints||[];
+    group.userData.checkpoints.push({x:p.x,z:p.z,index:i});
+  });
+
+  // Obstacles between checkpoints
+  for(let i=0;i<4;i++){
+    const wall=new THREE.Mesh(
+      new THREE.BoxGeometry(0.3,2,5),
+      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5})
+    );
+    wall.position.set(-25-i*18,1,0);
+    group.add(wall);
+  }
+
+  group.userData.spawn={x:0,y:2,z:0};
+  return group;
+}
+
+function initSpeedrun(){
+  clearGame();
+  speedGroup=buildSpeedrun();
+  scene.add(speedGroup);
+  const sp=speedGroup.userData.spawn;
+  player.x=sp.x;player.y=sp.y;player.z=sp.z;
+  player.vx=0;player.vy=0;player.vz=0;
+  gameMode='speedrun';
+  speedNextCP=0;
+  speedStartTime=Date.now();
+  speedFinished=false;
+  document.getElementById('hudTitle').textContent='SPEED RUN';
+  document.getElementById('hudSub').textContent='Hit all checkpoints!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateSpeedrun(){
+  if(!speedGroup)return;
+
+  if(player.y<-5){
+    const sp=speedGroup.userData.spawn;
+    player.x=sp.x;player.y=sp.y;player.z=sp.z;
+    player.vx=0;player.vy=0;player.vz=0;
+  }
+
+  // Check checkpoint proximity
+  const cps=speedGroup.userData.checkpoints;
+  if(speedNextCP<cps.length){
+    const cp=cps[speedNextCP];
+    const dist=Math.sqrt((player.x-cp.x)**2+(player.z-cp.z)**2);
+    if(dist<4){
+      speedNextCP++;
+      if(speedNextCP>=cps.length){
+        // Finished!
+        speedFinished=true;
+        const elapsed=((Date.now()-speedStartTime)/1000).toFixed(1);
+        document.getElementById('goTitle').textContent='YOU WIN!';
+        document.getElementById('goSub').textContent=`Time: ${elapsed}s`;
+        document.getElementById('gameOver').style.display='flex';
+      }
+    }
+  }
+
+  const elapsed=((Date.now()-speedStartTime)/1000).toFixed(1);
+  document.getElementById('hudSub').textContent=`CP: ${speedNextCP}/${speedGroup.userData.checkpoints.length} | Time: ${elapsed}s`;
+}
+
+// ══ GAME MANAGEMENT ══════════════════════════════════════════
+function clearGame(){
+  [obbyGroup,lavaGroup,speedGroup,lobby].forEach(g=>{
+    if(g){scene.remove(g);g=null;}
+  });
+}
+
+function backToLobby(){
+  clearGame();
+  initLobby();
+  document.getElementById('gameOver').style.display='none';
+}
+
+function startGame(game){
+  switch(game){
+    case 'obby':initObby();break;
+    case 'lava':initLava();break;
+    case 'speedrun':initSpeedrun();break;
   }
 }
 
-// ══ PLAYER CONTROLS ══════════════════════════════════════════
-const keys={};
-
-document.addEventListener('keydown',e=>{
-  keys[e.key.toLowerCase()]=true;
-  if(e.key===' '&&isPointerLocked){e.preventDefault();}
-  // Number keys for block selection
-  const n=parseInt(e.key);
-  if(n>=1&&n<=5&&isPointerLocked){
-    selectedBlock=n-1;
-    document.querySelectorAll('#toolbar .slot').forEach((s,i)=>s.classList.toggle('active',i===selectedBlock));
-  }
-});
-
-document.addEventListener('keyup',e=>{
-  keys[e.key.toLowerCase()]=false;
-});
-
-function updateCharacter(dt){
-  const cs=charState;
+// ══ PLAYER PHYSICS ══════════════════════════════════════════
+function updatePlayer(){
   let mx=0,mz=0;
   if(keys['w']||keys['arrowup'])mz-=1;
   if(keys['s']||keys['arrowdown'])mz+=1;
@@ -401,166 +722,142 @@ function updateCharacter(dt){
   const len=Math.sqrt(mx*mx+mz*mz);
   if(len>0){mx/=len;mz/=len;}
 
-  const fwd=camTheta;
+  const fwd=player.yaw;
   const rmx=mx*Math.cos(fwd)-mz*Math.sin(fwd);
   const rmz=mx*Math.sin(fwd)+mz*Math.cos(fwd);
 
-  const targetVx=rmx*cs.speed;
-  const targetVz=rmz*cs.speed;
-  cs.vx+=(targetVx-cs.vx)*dt*10;
-  cs.vz+=(targetVz-cs.vz)*dt*10;
+  const targetVx=rmx*player.speed;
+  const targetVz=rmz*player.speed;
+  player.vx+=(targetVx-player.vx)*dt*12;
+  player.vz+=(targetVz-player.vz)*dt*12;
 
-  // Gravity
-  cs.vy-=25*dt;
-  cs.y+=cs.vy*dt;
+  player.vy+=GRAVITY*dt;
+  player.y+=player.vy*dt;
+  player.x+=player.vx*dt;
+  player.z+=player.vz*dt;
 
-  const newX=cs.x+cs.vx*dt;
-  const newZ=cs.z+cs.vz*dt;
-
-  // Ground collision
-  const gnd=getTerrainHeight(newX,newZ)+2;
-  if(cs.y<gnd){
-    cs.y=gnd;
-    cs.vy=0;
-    cs.onGround=true;
+  // Ground collision (y=0 is ground level)
+  if(player.y<0.5){
+    player.y=0.5;
+    player.vy=0;
+    player.onGround=true;
   }else{
-    cs.onGround=false;
+    player.onGround=false;
   }
 
   // Jump
-  if((keys[' ']||keys['space'])&&cs.onGround&&isPointerLocked){
-    cs.vy=cs.jumpForce;
-    cs.onGround=false;
-  }
-
-  cs.x=newX;
-  cs.z=newZ;
-
-  charGroup.position.set(cs.x,cs.y,cs.z);
-
-  // Face movement direction
-  if(rmx!==0||rmz!==0){
-    const targetRot=Math.atan2(rmx,rmz);
-    let diff=targetRot-charGroup.rotation.y;
-    if(diff>Math.PI)diff-=Math.PI*2;
-    if(diff<-Math.PI)diff+=Math.PI*2;
-    charGroup.rotation.y+=diff*dt*8;
+  if((keys[' ']||keys['space'])&&player.onGround&&isLocked){
+    player.vy=player.jump;
+    player.onGround=false;
+    keys[' ']=false;
   }
 }
 
-// ══ MOUSE / POINTER LOCK ════════════════════════════════════
-renderer.domElement.addEventListener('click',()=>{
-  if(!isPointerLocked){
-    renderer.domElement.requestPointerLock();
+// ══ CAMERA ══════════════════════════════════════════════════
+function updateCamera(){
+  cam.position.set(player.x,player.y+1.4,player.z);
+  const euler=new THREE.Euler(player.pitch,player.yaw,0,'YXZ');
+  cam.quaternion.setFromEuler(euler);
+}
+
+// ══ INTERACTION ═════════════════════════════════════════════
+function checkInteraction(){
+  const interactEl=document.getElementById('interact');
+  if(gameMode!=='lobby'||!lobby){
+    interactEl.style.display='none';
+    return;
   }
+
+  // Raycast for portals
+  raycaster.setFromCamera({x:0,y:0},cam);
+  const hits=raycaster.intersectObjects(lobby.children,true);
+  let found=null;
+  for(const hit of hits){
+    const p=hit.point;
+    // Check if near any portal
+    if(lobby.userData.portals){
+      for(const portal of lobby.userData.portals){
+        const dist=Math.sqrt((p.x-portal.pos.x)**2+(p.z-portal.pos.z)**2);
+        if(dist<4&&Math.abs(p.y-portal.pos.y)<4){
+          found=portal;break;
+        }
+      }
+    }
+    if(found)break;
+  }
+
+  if(found){
+    interactEl.style.display='block';
+    if(keys['e']||keys['E']){
+      keys['e']=false;
+      startGame(found.game);
+    }
+  }else{
+    interactEl.style.display='none';
+  }
+}
+
+// ══ CONTROLS ════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(e.key===' '&&isLocked)e.preventDefault();
+});
+
+document.addEventListener('keyup',e=>{
+  keys[e.key.toLowerCase()]=false;
+});
+
+// Pointer lock
+renderer.domElement.addEventListener('click',()=>{
+  if(!isLocked)renderer.domElement.requestPointerLock();
 });
 
 document.addEventListener('pointerlockchange',()=>{
-  isPointerLocked=!!document.pointerLockElement;
-  document.getElementById('info').style.opacity=isPointerLocked?'0':'1';
+  isLocked=!!document.pointerLockElement;
 });
 
 document.addEventListener('mousemove',e=>{
-  if(!isPointerLocked)return;
-  camTheta-=e.movementX*0.005;
-  camPhi+=e.movementY*0.005;
-  camPhi=Math.max(0.1,Math.min(Math.PI/2-0.1,camPhi));
+  if(!isLocked)return;
+  player.yaw-=e.movementX*0.003;
+  player.pitch-=e.movementY*0.003;
+  player.pitch=Math.max(-Math.PI/2.2,Math.min(Math.PI/2.2,player.pitch));
 });
 
-// Block placement
-document.addEventListener('mousedown',e=>{
-  if(!isPointerLocked)return;
-  if(e.button===2||e.shiftKey){
-    // Remove: raycast and remove block
-    raycaster.setFromCamera({x:0,y:0},cam);
-    const allMeshes=[];
-    placedMeshes.forEach(m=>allMeshes.push(m));
-    const hits=raycaster.intersectObjects(allMeshes);
-    if(hits.length>0){
-      const hit=hits[0];
-      const bx=Math.round(hit.object.position.x/BLOCK_SIZE);
-      const by=Math.round((hit.object.position.y-BLOCK_SIZE/2)/BLOCK_SIZE);
-      const bz=Math.round(hit.object.position.z/BLOCK_SIZE);
-      removeBlock(bx,by,bz);
-    }
-  }else{
-    // Place: raycast and place adjacent
-    raycaster.setFromCamera({x:0,y:0},cam);
-    const allMeshes=[];
-    placedMeshes.forEach(m=>allMeshes.push(m));
-    const hits=raycaster.intersectObjects(allMeshes);
-    if(hits.length>0){
-      const hit=hits[0];
-      const bx=Math.round(hit.object.position.x/BLOCK_SIZE);
-      const by=Math.round((hit.object.position.y-BLOCK_SIZE/2)/BLOCK_SIZE);
-      const bz=Math.round(hit.object.position.z/BLOCK_SIZE);
-      const n=hit.face.normal;
-      const nx=bx+Math.round(n.x);
-      const ny=by+Math.round(n.y);
-      const nz=bz+Math.round(n.z);
-      placeBlock(nx,ny,nz,selectedBlock);
-    }
-  }
-});
+// ══ RAYCASTER ═══════════════════════════════════════════════
+const raycaster=new THREE.Raycaster();
 
-document.addEventListener('contextmenu',e=>e.preventDefault());
-
-// ══ BUILD UI ═════════════════════════════════════════════════
-(function buildToolbar(){
-  const tb=document.getElementById('toolbar');
-  for(let i=0;i<5;i++){
-    const slot=document.createElement('div');
-    slot.className='slot'+(i===0?' active':'');
-    const swatch=document.createElement('div');
-    swatch.className='swatch';
-    swatch.style.background='#'+BLOCK_TYPES[i].color.toString(16).padStart(6,'0');
-    slot.appendChild(swatch);
-    slot.title=BLOCK_TYPES[i].name;
-    slot.dataset.index=i;
-    slot.addEventListener('click',()=>{
-      document.querySelectorAll('#toolbar .slot').forEach(s=>s.classList.remove('active'));
-      slot.classList.add('active');
-      selectedBlock=i;
-    });
-    tb.appendChild(slot);
-  }
-})();
-
-// ══ GAME LOOP ════════════════════════════════════════════════
-let lastTime=0,frames=0,fpsTime=0;
+// ══ MAIN LOOP ═══════════════════════════════════════════════
+let frameCount=0,fpsLast=0;
 
 function animate(time){
   requestAnimationFrame(animate);
-  const dt=Math.min((time-lastTime)/1000,0.05);
+  dt=Math.min((time-(lastTime||time))/1000,0.05);
   lastTime=time;
 
-  updateCharacter(dt);
+  updatePlayer();
+  updateCamera();
 
-  // Camera
-  const cx=charState.x+Math.sin(camTheta)*camDist*Math.cos(camPhi);
-  const cy=charState.y+2+camDist*Math.sin(camPhi);
-  const cz=charState.z+Math.cos(camTheta)*camDist*Math.cos(camPhi);
-  cam.position.set(cx,cy,cz);
-  cam.lookAt(charState.x,charState.y+1.5,charState.z);
+  switch(gameMode){
+    case 'lobby':break;
+    case 'obby':updateObby();break;
+    case 'lava':updateLava();break;
+    case 'speedrun':updateSpeedrun();break;
+  }
 
-  updateTargeting();
-
-  // Animate water
-  water.position.y=-1+Math.sin(time*0.001)*0.3;
-
-  // Fog
-  scene.fog.far=400+Math.sin(time*0.0005)*50;
+  checkInteraction();
 
   renderer.render(scene,cam);
 
   // FPS
-  frames++;
-  if(time-fpsTime>1000){
-    document.getElementById('stats').innerHTML=
-      `FPS: ${frames}<br>Blocks: ${blocks.size}<br>Pos: ${charState.x.toFixed(0)}, ${charState.z.toFixed(0)}`;
-    frames=0;fpsTime=time;
+  frameCount++;
+  if(time-fpsLast>1000){
+    document.getElementById('topRight').innerHTML=
+      `FPS: ${frameCount}<br>Mode: ${gameMode.toUpperCase()}`;
+    frameCount=0;fpsLast=time;
   }
 }
+
+let lastTime=0;
 
 // ══ RESIZE ════════════════════════════════════════════════════
 window.addEventListener('resize',()=>{
@@ -577,15 +874,16 @@ const li=setInterval(()=>{
     lp=100;clearInterval(li);
     document.getElementById('loadBar').style.width='100%';
     setTimeout(()=>{
-      const l=document.getElementById('loading');
-      l.style.opacity='0';
-      setTimeout(()=>{l.style.display='none';document.getElementById('ui').style.display='block';document.getElementById('info').style.opacity='1';},800);
+      document.getElementById('loading').style.opacity='0';
+      setTimeout(()=>{
+        document.getElementById('loading').style.display='none';
+        initLobby();
+        animate(0);
+      },800);
     },400);
   }
   document.getElementById('loadBar').style.width=lp+'%';
 },150);
-
-animate(0);
 </script>
 </body>
 </html>
