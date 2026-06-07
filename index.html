@@ -2,57 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Block Arcade — Minigames</title>
+<title>Blockverse — 8 Games</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#000;font-family:'Inter','Segoe UI',sans-serif;overflow:hidden;user-select:none;}
 canvas{display:block;}
 #ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20;color:#fff;}
-#crosshair{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-size:20px;color:rgba(255,255,255,0.3);pointer-events:none;
-}
-#hud{
-  position:absolute;top:12px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);padding:6px 16px;
-  border-radius:8px;border:1px solid rgba(255,255,255,0.08);
-  font-size:12px;text-align:center;pointer-events:none;
-}
+#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;color:rgba(255,255,255,0.3);}
+#hud{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);padding:6px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:center;}
 #hud .title{font-size:14px;font-weight:600;color:#0af;margin-bottom:2px;}
 #hud .sub{color:rgba(255,255,255,0.5);}
-#hud .timer{font-size:24px;font-weight:300;color:#0f0;font-family:monospace;}
-#gameOver{
-  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(0,0,0,0.6);z-index:30;backdrop-filter:blur(6px);
-  align-items:center;justify-content:center;flex-direction:column;
-}
+#hud .money{font-size:18px;font-weight:600;color:#ffcc00;font-family:monospace;}
+#hud .pets{font-size:14px;color:#ff88ff;font-family:monospace;}
+#gameOver{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:30;backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;}
 #gameOver .big{font-size:48px;font-weight:300;margin-bottom:8px;text-shadow:0 0 30px rgba(0,170,255,0.3);}
 #gameOver .sm{font-size:16px;color:rgba(255,255,255,0.5);margin-bottom:20px;}
-#gameOver button{
-  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-  color:#fff;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;
-  pointer-events:auto;transition:0.15s;
-}
+#gameOver button{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;pointer-events:auto;transition:0.15s;}
 #gameOver button:hover{background:rgba(0,170,255,0.2);border-color:#0af;}
-#interact{
-  position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);
-  padding:8px 20px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);
-  font-size:13px;display:none;pointer-events:none;
-}
+#interact{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);padding:8px 20px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);font-size:13px;display:none;}
 #interact .key{color:#0af;font-weight:600;}
-#topRight{
-  position:absolute;top:12px;right:12px;
-  font-size:11px;font-family:monospace;text-align:right;line-height:1.6;
-  background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:6px 10px;border-radius:6px;
-  pointer-events:none;color:rgba(255,255,255,0.5);
-}
-#loading{
-  position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e1a;z-index:100;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#0af;transition:opacity 0.8s;font-family:'Inter',sans-serif;
-}
+#topRight{position:absolute;top:12px;right:12px;font-size:11px;font-family:monospace;text-align:right;line-height:1.6;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);padding:6px 10px;border-radius:6px;color:rgba(255,255,255,0.5);}
+#shop{display:none;position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);gap:10px;max-width:90vw;overflow-x:auto;pointer-events:auto;}
+#shop .item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 14px;cursor:pointer;white-space:nowrap;text-align:center;transition:0.15s;}
+#shop .item:hover{background:rgba(0,170,255,0.15);border-color:#0af;}
+#shop .item .name{font-size:12px;color:#fff;}
+#shop .item .cost{font-size:10px;color:#ffcc00;}
+#shop .item.owned{opacity:0.4;}
+#shop .item.owned .cost{color:#0f0;}
+#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e1a;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0af;transition:opacity 0.8s;font-family:'Inter',sans-serif;}
 #loading h1{font-size:42px;font-weight:300;letter-spacing:4px;text-shadow:0 0 40px rgba(0,170,255,0.3);}
 #loading .sub{font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:6px;text-transform:uppercase;margin-top:4px;}
 #loading .bar{width:320px;height:2px;background:rgba(0,170,255,0.1);border-radius:2px;margin-top:24px;overflow:hidden;}
@@ -61,826 +39,702 @@ canvas{display:block;}
 </head>
 <body>
 <div id="loading">
-  <h1>BLOCK ARCADE</h1>
-  <div class="sub">Minigames</div>
+  <h1>BLOCKVERSE</h1>
+  <div class="sub">8 Games · One World</div>
   <div class="bar"><div class="bar-inner" id="loadBar"></div></div>
 </div>
 <div id="ui" style="display:none;">
   <div id="crosshair">+</div>
   <div id="hud">
-    <div class="title" id="hudTitle">LOBBY</div>
-    <div class="sub" id="hudSub">Explore & find a game portal!</div>
+    <div class="title" id="hudTitle">HUB</div>
+    <div class="sub" id="hudSub">Explore & find adventures!</div>
   </div>
-  <div id="topRight" id="topRightEl">FPS: --</div>
-  <div id="interact">Press <span class="key">E</span> to play</div>
+  <div id="topRight">FPS: --</div>
+  <div id="interact">Press <span class="key">E</span> <span id="interactTxt">to interact</span></div>
+  <div id="shop"></div>
 </div>
 <div id="gameOver">
   <div class="big" id="goTitle">GAME OVER</div>
   <div class="sm" id="goSub"></div>
-  <button onclick="backToLobby()">Back to Lobby</button>
+  <button onclick="backToHub()">Back to Hub</button>
 </div>
 <script>
 // ══ CONSTANTS ════════════════════════════════════════════════
-const GRAVITY=-30;
-const MOVE_SPEED=12;
-const JUMP_FORCE=11;
-const BLOCK=3;
+const G=-30,MS=13,JF=12,BL=3;
 
 // ══ STATE ════════════════════════════════════════════════════
-let gameMode='lobby'; // lobby, obby, lava, speedrun
-let isLocked=false;
-const keys={};
-let dt=0;
-
-// Player physics
-const player={
-  x:0,y:3,z:0,
-  vx:0,vy:0,vz:0,
-  onGround:false,speed:MOVE_SPEED,jump:JUMP_FORCE,
-  yaw:0,pitch:0,
-};
+let mode='hub',isLocked=false,dt=0;
+const K={};
+const P={x:0,y:3,z:0,vx:0,vy:0,vz:0,onGround:false,yaw:0,pitch:0,money:0,pets:[]};
+let shopItems={},shopOpen=false,interactTarget=null;
+let totalMoney=0,petCount=0;
 
 // ══ SCENE ══════════════════════════════════════════════════════
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x7ec8e3);
+const S=new THREE.Scene();
+S.background=new THREE.Color(0x7ec8e3);
+const C=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,500);
+const R=new THREE.WebGLRenderer({antialias:true});
+R.setSize(innerWidth,innerHeight);
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.shadowMap.enabled=true;
+R.shadowMap.type=THREE.PCFSoftShadowMap;
+R.toneMapping=THREE.ACESFilmicToneMapping;
+R.toneMappingExposure=1.0;
+document.body.prepend(R.domElement);
+const A=new THREE.AmbientLight(0x99bbdd,0.55);
+S.add(A);
+const U=new THREE.DirectionalLight(0xffeedd,1.4);
+U.position.set(80,150,60);U.castShadow=true;
+U.shadow.mapSize.width=2048;U.shadow.mapSize.height=2048;
+U.shadow.camera.near=1;U.shadow.camera.far=300;
+U.shadow.camera.left=-150;U.shadow.camera.right=150;
+U.shadow.camera.top=150;U.shadow.camera.bottom=-150;
+S.add(U);
+const H=new THREE.HemisphereLight(0x87ceeb,0x6b4423,0.4);
+S.add(H);
 
-const cam=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,500);
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.0;
-document.body.prepend(renderer.domElement);
+// ══ HELPERS ══════════════════════════════════════════════════
+function box(w,h,d,c,o={}){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,...o}));return m;}
+function plat(w,d,c,y=0.5){const m=box(w,0.5,d,c);m.position.y=y;return m;}
+function cyl(r,h,c,o={}){return new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,12),new THREE.MeshStandardMaterial({color:c,...o}));}
+function sphere(r,c,o={}){return new THREE.Mesh(new THREE.SphereGeometry(r,12,12),new THREE.MeshStandardMaterial({color:c,...o}));}
+function canvasText(t,w=128,h=32,color='#0af',size=20){
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,0)';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=color;ctx.font=`bold ${size}px monospace`;ctx.textAlign='center';
+  ctx.fillText(t,w/2,h-size/2+4);
+  return new THREE.CanvasTexture(c);
+}
+function label(t,color,size,w=128){const m=new THREE.Mesh(new THREE.PlaneGeometry(w/40,32/40),new THREE.MeshBasicMaterial({map:canvasText(t,w,32,color,size),transparent:true,side:THREE.DoubleSide}));return m;}
+function makePlane(w,h,color,op=1){return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color,transparent:op<1,opacity:op,side:THREE.DoubleSide}));}
+const RC=new THREE.Raycaster();
+const _V=new THREE.Vector2();
 
-const amb=new THREE.AmbientLight(0x99bbdd,0.55);
-scene.add(amb);
-const sun=new THREE.DirectionalLight(0xffeedd,1.4);
-sun.position.set(80,150,60);
-sun.castShadow=true;
-sun.shadow.mapSize.width=2048;sun.shadow.mapSize.height=2048;
-sun.shadow.camera.near=1;sun.shadow.camera.far=300;
-sun.shadow.camera.left=-150;sun.shadow.camera.right=150;
-sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;
-scene.add(sun);
-const hemi=new THREE.HemisphereLight(0x87ceeb,0x6b4423,0.4);
-scene.add(hemi);
+// ══ WORLD HUB ════════════════════════════════════════════════
+let hub=null;
+const GAMES=[
+  {id:'tycoon',name:'TYCOON',color:0xffcc00,x:-30,z:0},
+  {id:'obby',name:'OBBY',color:0xff4444,x:-15,z:25},
+  {id:'deathrun',name:'DEATHRUN',color:0xff4400,x:15,z:25},
+  {id:'speedrun',name:'SPEED',color:0x44ff44,x:30,z:0},
+  {id:'roleplay',name:'ROLEPLAY',color:0x4488ff,x:15,z:-25},
+  {id:'simulator',name:'SIMULATOR',color:0xff88ff,x:-15,z:-25},
+  {id:'battle',name:'BATTLE',color:0xff2244,x:-40,z:-15},
+  {id:'parkour',name:'PARKOUR',color:0x44ffcc,x:40,z:15},
+];
 
-// ══ LOBBY ════════════════════════════════════════════════════
-const lobbyObjects=[];
-
-function buildLobby(){
-  const group=new THREE.Group();
-
-  // Floor
-  const floor=new THREE.Mesh(
-    new THREE.PlaneGeometry(120,120).rotateX(-Math.PI/2),
-    new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})
-  );
-  floor.receiveShadow=true;
-  group.add(floor);
-
-  // Platform
-  const plat=new THREE.Mesh(
-    new THREE.CylinderGeometry(25,25,2,24),
-    new THREE.MeshStandardMaterial({color:0xcccccc,roughness:0.5})
-  );
-  plat.position.y=1;plat.receiveShadow=true;plat.castShadow=true;
-  group.add(plat);
-
-  // Center pillar
-  const pillar=new THREE.Mesh(
-    new THREE.CylinderGeometry(1,1.5,20,8),
-    new THREE.MeshStandardMaterial({color:0x888888,roughness:0.6})
-  );
-  pillar.position.y=11;
-  group.add(pillar);
-
-  // Sphere on top
-  const sphere=new THREE.Mesh(
-    new THREE.SphereGeometry(3,16,16),
-    new THREE.MeshStandardMaterial({color:0x0af,roughness:0.1,metalness:0.3})
-  );
-  sphere.position.y=22;
-  group.add(sphere);
-
-  // Portals: 3 around the platform
-  const portalColors=[0xff4444,0xff8800,0x44ff44];
-  const portalGames=['obby','lava','speedrun'];
-  const portalLabels=['OBBY','LAVA','SPEED'];
-
-  portalColors.forEach((color,i)=>{
-    const angle=(i/3)*Math.PI*2;
-    const px=Math.sin(angle)*18;
-    const pz=Math.cos(angle)*18;
-
-    // Portal frame
-    const frame=new THREE.Mesh(
-      new THREE.BoxGeometry(0.5,6,0.5),
-      new THREE.MeshStandardMaterial({color:0x444444,roughness:0.5})
-    );
-    for(let dy of[-2.5,2.5]){
-      const f=frame.clone();
-      f.position.set(px,dy+2,pz);
-      group.add(f);
-    }
-    const topBar=new THREE.Mesh(
-      new THREE.BoxGeometry(4,0.5,0.5),
-      new THREE.MeshStandardMaterial({color:0x444444,roughness:0.5})
-    );
-    topBar.position.set(px,5.5,pz);
-    group.add(topBar);
-
-    // Portal glow
-    const glow=new THREE.Mesh(
-      new THREE.PlaneGeometry(3.5,5.5),
-      new THREE.MeshBasicMaterial({color:portalColors[i],transparent:true,opacity:0.3,side:THREE.DoubleSide})
-    );
-    glow.position.set(px,2.5,pz);
-    group.add(glow);
-
-    // Portal label
-    const canvas=document.createElement('canvas');
-    canvas.width=128;canvas.height=32;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,0)';ctx.fillRect(0,0,128,32);
-    ctx.fillStyle='#'+portalColors[i].toString(16).padStart(6,'0');
-    ctx.font='bold 20px monospace';ctx.textAlign='center';
-    ctx.fillText(portalLabels[i],64,22);
-    const labelTex=new THREE.CanvasTexture(canvas);
-    const label=new THREE.Mesh(
-      new THREE.PlaneGeometry(3,0.8),
-      new THREE.MeshBasicMaterial({map:labelTex,transparent:true,side:THREE.DoubleSide})
-    );
-    label.position.set(px,6.2,pz);
-    group.add(label);
-
-    // Store portal info for interaction
-    group.userData.portals=group.userData.portals||[];
-    group.userData.portals.push({pos:{x:px,y:2.5,z:pz},game:portalGames[i],color:portalColors[i]});
+function buildHub(){
+  const g=new THREE.Group();
+  // Ground
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(200,200).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})));
+  // Main platform
+  const pl=cyl(30,2,0xcccccc,{roughness:0.5});pl.position.y=1;
+  g.add(pl);
+  // Center tower
+  const tw=cyl(1.5,25,0x888888,{roughness:0.6});tw.position.y=13.5;
+  g.add(tw);
+  const sp=sphere(4,0x0af,{roughness:0.1,metalness:0.3});sp.position.y=27;
+  g.add(sp);
+  // Game portals
+  g.userData.portals=[];
+  GAMES.forEach((gm,i)=>{
+    const a=Math.atan2(gm.x,gm.z);
+    const px=gm.x,pz=gm.z;
+    // Frame
+    const fMat=new THREE.MeshStandardMaterial({color:0x444444,roughness:0.5});
+    [-2.5,2.5].forEach(dy=>{const f=box(0.5,5,0.5,0x444444);f.position.set(px,dy+2,pz);g.add(f);});
+    const tb=box(4,0.5,0.5,0x444444);tb.position.set(px,5.5,pz);g.add(tb);
+    // Glow
+    const gl=makePlane(3.5,5.5,gm.color,0.25);gl.position.set(px,2.5,pz);g.add(gl);
+    // Label
+    const lb=label(gm.name,gm.color);lb.position.set(px,6.2,pz);g.add(lb);
+    g.userData.portals.push({x:px,y:2.5,z:pz,game:gm.id,color:gm.color});
   });
-
-  // Spawn point
-  group.userData.spawn={x:0,y:2,z:20};
-
-  return group;
+  // Info signs
+  const signLabels=['Welcome! Explore portals to play 8 games. Earn money, collect pets, & more!','E to interact'];
+  signLabels.forEach((t,i)=>{
+    const lb=label(t,'#ffffff',14,256);lb.position.set(0,8+i*1.5,15);g.add(lb);
+  });
+  return g;
 }
 
-let lobby=null;
-let portalMeshes=[];
-
-function initLobby(){
-  if(lobby)scene.remove(lobby);
-  lobby=buildLobby();
-  scene.add(lobby);
-  // Collect portal meshes for raycasting
-  portalMeshes=[];
-  lobby.children.forEach(c=>{
-    if(c.geometry&&c.material&&c.material.color){
-      portalMeshes.push(c);
-    }
-  });
-  player.x=0;player.y=3;player.z=20;
-  player.vx=0;player.vy=0;player.vz=0;
-  gameMode='lobby';
-  document.getElementById('hudTitle').textContent='LOBBY';
-  document.getElementById('hudSub').textContent='Walk through a portal to play!';
+function initHub(){
+  if(hub)S.remove(hub);
+  hub=buildHub();S.add(hub);
+  P.x=0;P.y=3;P.z=18;P.vx=P.vy=P.vz=0;
+  mode='hub';
+  document.getElementById('hudTitle').textContent='BLOCKVERSE';
+  document.getElementById('hudSub').textContent='8 games · Earn money · Collect pets · Explore!';
   document.getElementById('gameOver').style.display='none';
-  document.getElementById('ui').style.display='block';
+  closeShop();
 }
 
-// ══ OBBY ═════════════════════════════════════════════════════
-let obbyObjects=[];
-let obbyLava=null;
-let obbyFinished=false;
+// ══ TYCOON ══════════════════════════════════════════════════
+let tycoon=null;
+const TYCOON_COST=[0,500,1500,4000,10000,25000,60000,150000];
+const TYCOON_INCOME=[1,3,8,20,50,120,300,800];
+
+function buildTycoon(){
+  const g=new THREE.Group();
+  // Plot floor
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(50,50).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x555555,roughness:0.8})));
+  // Fence
+  for(let side of[-1,1]){
+    g.add(box(50,1,0.5,0x444444).translateR(side*25,0.5,0));
+    g.add(box(0.5,1,50,0x444444).translateR(0,0.5,side*25));
+  }
+  // Business stands
+  g.userData.stands=[];
+  const tierNames=['Lemonade','Hot Dog','Ice Cream','Pizza','Burger','Sushi','Steak','Gold'];
+  tierNames.forEach((n,i)=>{
+    const x=-20+i*6,z=0;
+    const stand=box(4,2,4,0xcc8844,{roughness:0.6});stand.position.set(x,1,z);g.add(stand);
+    const top=box(4,0.3,4,0xdd9955);top.position.set(x,2.2,z);g.add(top);
+    const lb=label(n,0xffcc00,12);lb.position.set(x,3,z);g.add(lb);
+    const costLb=label('$'+TYCOON_COST[i],0xffffff,10);costLb.position.set(x,2.5,z);g.add(costLb);
+    g.userData.stands.push({x,z,index:i,cost:TYCOON_COST[i],income:TYCOON_INCOME[i],name:n,owned:false});
+  });
+  // Money counter
+  const mLb=label('$0','#ffcc00',22,256);mLb.position.set(0,5,0);g.add(mLb);
+  g.userData.moneyLabel=mLb;
+  g.userData.spawn={x:0,y:1,z:15};
+  return g;
+}
+
+function initTycoon(){
+  clearGame();
+  tycoon=buildTycoon();S.add(tycoon);
+  const sp=tycoon.userData.spawn;
+  P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='tycoon';
+  document.getElementById('hudTitle').textContent='TYCOON';
+  document.getElementById('hudSub').textContent='Buy businesses and earn money!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateTycoon(){
+  if(!tycoon)return;
+  // Auto income
+  let total=0;
+  tycoon.userData.stands.forEach(s=>{if(s.owned)total+=s.income;});
+  P.money+=total*dt;
+  totalMoney+=total*dt;
+  // Update label
+  const ml=tycoon.userData.moneyLabel;
+  if(ml){ml.material.map=canvasText('$'+Math.floor(P.money).toLocaleString(),256,32,'#ffcc00',22);ml.material.needsUpdate=true;}
+  // HUD
+  document.getElementById('hudSub').textContent=`Income: $${total.toFixed(1)}/s | Money: $${Math.floor(P.money).toLocaleString()}`;
+  // Interact with stands
+  if(interactTarget&&interactTarget.type==='tycoon_stand'){
+    const idx=interactTarget.index;
+    const stand=tycoon.userData.stands[idx];
+    if(stand&&!stand.owned&&P.money>=stand.cost){
+      P.money-=stand.cost;
+      stand.owned=true;
+      // Visual upgrade
+      const mesh=tycoon.children.find(c=>c.position.x===stand.x&&c.position.z===stand.z&&c.geometry&&c.geometry.type==='BoxGeometry');
+      if(mesh)mesh.material.color.setHex(0x44aa44);
+      document.getElementById('interactTxt').textContent='OWNED ✓';
+      setTimeout(()=>{document.getElementById('interact').style.display='none';},500);
+      closeShop();
+    }
+  }
+}
+
+// ══ OBBY ════════════════════════════════════════════════════
+let obby=null,obbyWin=false;
 
 function buildObby(){
-  const group=new THREE.Group();
-
-  // Ground (death zone)
-  const ground=new THREE.Mesh(
-    new THREE.PlaneGeometry(200,20).rotateX(-Math.PI/2),
-    new THREE.MeshStandardMaterial({color:0xcc4444,roughness:0.8})
-  );
-  ground.position.set(0,-1,0);
-  group.add(ground);
-
-  // Lava particles (red glowing floor)
-  obbyLava=new THREE.Mesh(
-    new THREE.PlaneGeometry(200,20).rotateX(-Math.PI/2),
-    new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.3})
-  );
-  obbyLava.position.set(0,0,0);
-  group.add(obbyLava);
-
-  // Starting platform
-  const start=new THREE.Mesh(
-    new THREE.BoxGeometry(8,1,6),
-    new THREE.MeshStandardMaterial({color:0x44aa44,roughness:0.6})
-  );
-  start.position.set(0,1,-5);
-  group.add(start);
-
-  // Obstacle course
-  const levels=[
-    // Simple platforms
-    {x:-15,z:-2,w:4,d:4},
-    {x:-25,z:-2,w:4,d:4},
-    {x:-35,z:-2,w:4,d:4},
-    {x:-42,z:-2,w:8,d:4},
-    // Jump over gap
-    {x:-50,z:-2,w:3,d:4},
-    {x:-58,z:-2,w:3,d:4},
-    // Spinning bar area - narrow
-    {x:-68,z:-2,w:4,d:3},
-    {x:-76,z:-2,w:3,d:3},
-    {x:-84,z:-2,w:4,d:3},
-    // Stairs up
-    {x:-92,z:-2,w:6,d:4,h:2},
-    {x:-92,z:-2,w:6,d:4,h:3},
-    {x:-92,z:-2,w:6,d:4,h:4},
-    // Final platform
-    {x:-100,z:-2,w:10,d:6},
-  ];
-
-  levels.forEach((l,i)=>{
-    const h=l.h||1;
-    const plat=new THREE.Mesh(
-      new THREE.BoxGeometry(l.w,h,l.d),
-      new THREE.MeshStandardMaterial({
-        color:new THREE.Color().setHSL(0.1+i*0.05,0.6,0.5),
-        roughness:0.5
-      })
-    );
-    plat.position.set(l.x,h/2,l.z);
-    plat.castShadow=true;plat.receiveShadow=true;
-    group.add(plat);
-    group.userData.platforms=group.userData.platforms||[];
-    group.userData.platforms.push({x:l.x,y:h,z:l.z,w:l.w,d:l.d});
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(200,20).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0xcc4444,roughness:0.8})));
+  // Platforms
+  const pts=[[0,-5],[0,0],[0,5],[-12,0],[-12,5],[-24,0],[-24,5],[-36,0],[-48,0],[-48,5],[-60,0],[-70,0],[-80,0],[-90,0],[-100,0]];
+  pts.forEach((p,i)=>{
+    const pl2=box(4,1,4,new THREE.Color().setHSL(i*0.06,0.6,0.5));pl2.position.set(p[0],0.5,p[1]);g.add(pl2);
   });
-
-  // Spinning bars (visual)
-  for(let i=0;i<4;i++){
-    const bar=new THREE.Mesh(
-      new THREE.BoxGeometry(6,0.3,0.3),
-      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5})
-    );
-    const bx=-55+i*8;
-    bar.position.set(bx,2.5,-2);
-    group.add(bar);
-  }
-
-  // Finish line
-  const fin=new THREE.Mesh(
-    new THREE.BoxGeometry(12,0.5,6),
-    new THREE.MeshBasicMaterial({color:0x00ff44,transparent:true,opacity:0.5})
-  );
-  fin.position.set(-103,1.5,-2);
-  group.add(fin);
-
-  const finPost=new THREE.Mesh(
-    new THREE.BoxGeometry(0.5,4,0.5),
-    new THREE.MeshStandardMaterial({color:0xffcc00})
-  );
-  finPost.position.set(-103,3,-5);
-  group.add(finPost);
-
-  group.userData.spawn={x:0,y:2,z:-5};
-  group.userData.finish={x:-103,z:-2};
-  return group;
+  // Finish
+  const fn=box(12,0.5,6,0x00ff44);fn.position.set(-103,1.5,0);fn.material.transparent=true;fn.material.opacity=0.5;g.add(fn);
+  g.userData.spawn={x:0,y:1,z:-5};
+  return g;
 }
 
-let obbyGroup=null;
-
 function initObby(){
-  clearGame();
-  obbyGroup=buildObby();
-  scene.add(obbyGroup);
-  const sp=obbyGroup.userData.spawn;
-  player.x=sp.x;player.y=sp.y;player.z=sp.z;
-  player.vx=0;player.vy=0;player.vz=0;
-  gameMode='obby';
-  obbyFinished=false;
-  document.getElementById('hudTitle').textContent='OBBY';
-  document.getElementById('hudSub').textContent='Reach the finish line!';
+  clearGame();obby=buildObby();S.add(obby);
+  const sp=obby.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='obby';obbyWin=false;
+  document.getElementById('hudTitle').textContent='OBBY';document.getElementById('hudSub').textContent='Reach the finish!';
   document.getElementById('gameOver').style.display='none';
 }
 
 function updateObby(){
-  if(!obbyGroup)return;
-  // Respawn if falling
-  if(player.y<-10){
-    const sp=obbyGroup.userData.spawn;
-    player.x=sp.x;player.y=sp.y;player.z=sp.z;
-    player.vx=0;player.vy=0;player.vz=0;
-  }
-  // Check finish
-  const fin=obbyGroup.userData.finish;
-  if(player.x<fin.x-1&&Math.abs(player.z-fin.z)<4){
-    if(!obbyFinished){
-      obbyFinished=true;
-      document.getElementById('goTitle').textContent='YOU WIN!';
-      document.getElementById('goSub').textContent='You completed the obby!';
-      document.getElementById('gameOver').style.display='flex';
-    }
-  }
-  // Animate lava
-  if(obbyLava){
-    obbyLava.material.opacity=0.2+Math.sin(Date.now()*0.003)*0.15;
+  if(!obby)return;
+  if(P.y<-10){const sp=obby.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;}
+  if(P.x<-102&&Math.abs(P.z)<4&&!obbyWin){
+    obbyWin=true;const bonus=500;P.money+=bonus;totalMoney+=bonus;
+    document.getElementById('goTitle').textContent='YOU WIN!';
+    document.getElementById('goSub').textContent=`+$${bonus}`;
+    document.getElementById('gameOver').style.display='flex';
   }
 }
 
-// ══ FLOOR IS LAVA ════════════════════════════════════════════
-let lavaObjects=[];
-let lavaPlatforms=[];
-let lavaRise=0;
-let lavaTimer=0;
-let lavaSafe=false;
-let lavaScore=0;
+// ══ DEATHRUN ════════════════════════════════════════════════
+let deathrun=null,drTraps=[],drWin=false;
 
-function buildLava(){
-  const group=new THREE.Group();
-
-  // Room floor
-  const floor=new THREE.Mesh(
-    new THREE.PlaneGeometry(60,60).rotateX(-Math.PI/2),
-    new THREE.MeshStandardMaterial({color:0x444444,roughness:0.9})
-  );
-  floor.position.y=-0.5;
-  group.add(floor);
-
-  // Walls
-  for(let side of[-1,1]){
-    const wall=new THREE.Mesh(
-      new THREE.BoxGeometry(60,8,0.5),
-      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.7})
-    );
-    wall.position.set(0,4,side*30);
-    group.add(wall);
-    const wall2=new THREE.Mesh(
-      new THREE.BoxGeometry(0.5,8,60),
-      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.7})
-    );
-    wall2.position.set(side*30,4,0);
-    group.add(wall2);
+function buildDeathrun(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(200,30).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x884444,roughness:0.8})));
+  // Platforms
+  for(let i=0;i<20;i++){const p=box(4,1,4,0xaa6644);p.position.set(-i*8,0.5,0);g.add(p);}
+  // Trap bars
+  for(let i=0;i<5;i++){
+    const bar=box(6,0.3,0.3,0x888888);bar.position.set(-15-i*16,2.5,0);drTraps.push({mesh:bar,baseY:2.5,phase:i});g.add(bar);
   }
-
-  // The lava
-  const lavaMat=new THREE.MeshBasicMaterial({color:0xff4400,transparent:true,opacity:0.6});
-  const lava=new THREE.Mesh(new THREE.PlaneGeometry(58,58).rotateX(-Math.PI/2),lavaMat);
-  lava.position.y=-0.3;
-  group.add(lava);
-  group.userData.lava=lava;
-
-  // Generate platforms
-  const platColors=[0x44aa44,0x4488cc,0xcc8844,0xaa44cc];
-  const platforms=[];
-  for(let i=0;i<20;i++){
-    const px=(Math.random()-0.5)*40;
-    const pz=(Math.random()-0.5)*40;
-    const pw=2+Math.random()*3;
-    const pd=2+Math.random()*3;
-    const ph=1+Math.random()*2;
-    const plat=new THREE.Mesh(
-      new THREE.BoxGeometry(pw,ph,pd),
-      new THREE.MeshStandardMaterial({
-        color:platColors[i%platColors.length],
-        roughness:0.6
-      })
-    );
-    plat.position.set(px,ph/2,pz);
-    plat.castShadow=true;
-    group.add(plat);
-    platforms.push({x:px,z:pz,w:pw,d:pd,h:ph,mesh:plat});
+  // Moving walls
+  for(let i=0;i<3;i++){
+    const wall=box(0.3,2,5,0x888888);wall.position.set(-25-i*24,1,0);drTraps.push({mesh:wall,baseX:-25-i*24,phase:i+5});g.add(wall);
   }
-
-  // Starting safe zone
-  const safe=new THREE.Mesh(
-    new THREE.BoxGeometry(8,1,8),
-    new THREE.MeshStandardMaterial({color:0x44aa44,roughness:0.5})
-  );
-  safe.position.set(0,0.5,0);
-  group.add(safe);
-
-  group.userData.spawn={x:0,y:2,z:0};
-  group.userData.platforms=platforms;
-  group.userData.safeZone={x:0,z:0,w:8,d:8};
-  return group;
+  // Finish
+  const fn=box(12,0.5,8,0x00ff44);fn.position.set(-165,1.5,0);fn.material.transparent=true;fn.material.opacity=0.5;g.add(fn);
+  g.userData.spawn={x:0,y:1,z:0};
+  return g;
 }
 
-let lavaGroup=null;
-let lavaRiseTarget=0;
-
-function initLava(){
-  clearGame();
-  lavaGroup=buildLava();
-  scene.add(lavaGroup);
-  const sp=lavaGroup.userData.spawn;
-  player.x=sp.x;player.y=sp.y;player.z=sp.z;
-  player.vx=0;player.vy=0;player.vz=0;
-  gameMode='lava';
-  lavaRise=0;
-  lavaRiseTarget=0;
-  lavaTimer=0;
-  lavaScore=0;
-  lavaSafe=true;
-  document.getElementById('hudTitle').textContent='FLOOR IS LAVA';
-  document.getElementById('hudSub').textContent='Stay on platforms!';
+function initDeathrun(){
+  clearGame();drTraps=[];deathrun=buildDeathrun();S.add(deathrun);
+  const sp=deathrun.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='deathrun';drWin=false;
+  document.getElementById('hudTitle').textContent='DEATHRUN';document.getElementById('hudSub').textContent='Dodge the traps!';
   document.getElementById('gameOver').style.display='none';
 }
 
-function updateLava(){
-  if(!lavaGroup)return;
-  lavaTimer+=dt;
-
-  // Every 4 seconds, raise lava and remove some platforms
-  if(lavaTimer>4){
-    lavaTimer=0;
-    lavaRiseTarget+=0.8;
-    lavaScore++;
-
-    // Remove 2 random platforms
-    const plats=lavaGroup.userData.platforms;
-    for(let r=0;r<2&&plats.length>5;r++){
-      const idx=Math.floor(Math.random()*plats.length);
-      const p=plats.splice(idx,1)[0];
-      if(p&&p.mesh)lavaGroup.remove(p.mesh);
-    }
-
-    // Add some new platforms higher up
-    for(let i=0;i<3;i++){
-      const px=(Math.random()-0.5)*40;
-      const pz=(Math.random()-0.5)*40;
-      const pw=1.5+Math.random()*2.5;
-      const pd=1.5+Math.random()*2.5;
-      const ph=1+Math.random()*2;
-      const plat=new THREE.Mesh(
-        new THREE.BoxGeometry(pw,ph,pd),
-        new THREE.MeshStandardMaterial({
-          color:new THREE.Color().setHSL(Math.random(),0.6,0.5),
-          roughness:0.6
-        })
-      );
-      const py=lavaRiseTarget+ph/2+1+Math.random()*2;
-      plat.position.set(px,py,pz);
-      plat.castShadow=true;
-      lavaGroup.add(plat);
-      plats.push({x:px,z:pz,w:pw,d:pd,h:ph,mesh:plat,y:py});
-    }
+function updateDeathrun(){
+  if(!deathrun)return;
+  const t=Date.now()*0.003;
+  drTraps.forEach((tr,i)=>{
+    if(i<5){tr.mesh.position.y=tr.baseY+Math.sin(t+tr.phase*1.5)*1.5;}
+    else{tr.mesh.position.x=tr.baseX+Math.sin(t+tr.phase*1.2)*4;}
+  });
+  if(P.y<-10){const sp=deathrun.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;}
+  if(P.x<-164&&Math.abs(P.z)<5&&!drWin){
+    drWin=true;const bonus=800;P.money+=bonus;totalMoney+=bonus;
+    document.getElementById('goTitle').textContent='YOU WIN!';
+    document.getElementById('goSub').textContent=`+$${bonus}`;
+    document.getElementById('gameOver').style.display='flex';
   }
-
-  // Animate lava rising
-  lavaRise+=(lavaRiseTarget-lavaRise)*dt*2;
-  const lavaMesh=lavaGroup.userData.lava;
-  if(lavaMesh){
-    lavaMesh.position.y=lavaRise-0.3;
-    lavaMesh.material.opacity=0.4+Math.sin(Date.now()*0.005)*0.2;
-  }
-
-  // Check if player is on a platform
-  let onPlat=false;
-  const plats=lavaGroup.userData.platforms;
-  for(const p of plats){
-    if(player.x>p.x-p.w/2&&player.x<p.x+p.w/2&&
-       player.z>p.z-p.d/2&&player.z<p.z+p.d/2&&
-       Math.abs(player.y-(p.y||p.h+0.5))<1.5){
-      onPlat=true;break;
-    }
-  }
-
-  // Check safe zone
-  const safe=lavaGroup.userData.safeZone;
-  if(Math.abs(player.x-safe.x)<safe.w/2&&Math.abs(player.z-safe.z)<safe.d/2){
-    onPlat=true;
-  }
-
-  // Touch lava = game over
-  if(!onPlat&&player.y<lavaRise+0.5&&!player.onGround){
-    endLavaGame();
-  }
-  // Also check if fell through
-  if(player.y<-5){
-    endLavaGame();
-  }
-
-  document.getElementById('hudSub').textContent=`Score: ${lavaScore} | Platforms: ${lavaGroup.userData.platforms.length}`;
 }
 
-function endLavaGame(){
-  document.getElementById('goTitle').textContent='GAME OVER';
-  document.getElementById('goSub').textContent=`You survived ${lavaScore} rounds!`;
-  document.getElementById('gameOver').style.display='flex';
-}
-
-// ══ SPEEDRUN ═════════════════════════════════════════════════
-let speedGroup=null;
-let speedCheckpoints=[];
-let speedNextCP=0;
-let speedStartTime=0;
-let speedFinished=false;
+// ══ SPEEDRUN ════════════════════════════════════════════════
+let speed=null,cpNext=0,cpTotal=0,speedTime=0,speedWin=false;
 
 function buildSpeedrun(){
-  const group=new THREE.Group();
-
-  // Ground
-  const ground=new THREE.Mesh(
-    new THREE.PlaneGeometry(200,30).rotateX(-Math.PI/2),
-    new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})
-  );
-  ground.position.y=-0.5;
-  group.add(ground);
-
-  // Course: path with checkpoints
-  const cpPositions=[
-    {x:0,z:0},{x:-15,z:0},{x:-30,z:3},{x:-40,z:-2},
-    {x:-50,z:4},{x:-60,z:-3},{x:-70,z:2},{x:-80,z:-2},
-    {x:-90,z:3},{x:-100,z:0},
-  ];
-
-  cpPositions.forEach((p,i)=>{
-    const h=1;
-    const plat=new THREE.Mesh(
-      new THREE.BoxGeometry(5,h,5),
-      new THREE.MeshStandardMaterial({
-        color:i===cpPositions.length-1?0x00ff44:0x4488cc,
-        roughness:0.5
-      })
-    );
-    plat.position.set(p.x,h/2,p.z);
-    plat.castShadow=true;
-    group.add(plat);
-
-    // Checkpoint marker (floating)
-    const marker=new THREE.Mesh(
-      new THREE.BoxGeometry(0.3,2,0.3),
-      new THREE.MeshBasicMaterial({color:0xffcc00})
-    );
-    marker.position.set(p.x,2.5,p.z);
-    group.add(marker);
-    const markerTop=new THREE.Mesh(
-      new THREE.SphereGeometry(0.3,6,6),
-      new THREE.MeshBasicMaterial({color:i===cpPositions.length-1?0x00ff44:0xffcc00})
-    );
-    markerTop.position.set(p.x,3.5,p.z);
-    group.add(markerTop);
-
-    group.userData.checkpoints=group.userData.checkpoints||[];
-    group.userData.checkpoints.push({x:p.x,z:p.z,index:i});
-  });
-
-  // Obstacles between checkpoints
-  for(let i=0;i<4;i++){
-    const wall=new THREE.Mesh(
-      new THREE.BoxGeometry(0.3,2,5),
-      new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5})
-    );
-    wall.position.set(-25-i*18,1,0);
-    group.add(wall);
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(250,30).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})));
+  g.userData.cps=[];
+  for(let i=0;i<12;i++){
+    const x=-i*18,z=(Math.random()-0.5)*6|0;
+    const p=box(5,1,5,i===11?0x00ff44:0x4488cc);p.position.set(x,0.5,z);g.add(p);
+    const mk=box(0.3,2,0.3,0xffcc00);mk.position.set(x,2.5,z);g.add(mk);
+    const mt=sphere(0.3,0xffcc00);mt.position.set(x,3.5,z);g.add(mt);
+    g.userData.cps.push({x,z,index:i});
   }
-
-  group.userData.spawn={x:0,y:2,z:0};
-  return group;
+  g.userData.spawn={x:0,y:1,z:0};
+  return g;
 }
 
 function initSpeedrun(){
-  clearGame();
-  speedGroup=buildSpeedrun();
-  scene.add(speedGroup);
-  const sp=speedGroup.userData.spawn;
-  player.x=sp.x;player.y=sp.y;player.z=sp.z;
-  player.vx=0;player.vy=0;player.vz=0;
-  gameMode='speedrun';
-  speedNextCP=0;
-  speedStartTime=Date.now();
-  speedFinished=false;
-  document.getElementById('hudTitle').textContent='SPEED RUN';
-  document.getElementById('hudSub').textContent='Hit all checkpoints!';
+  clearGame();speed=buildSpeedrun();S.add(speed);
+  const sp=speed.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='speedrun';cpNext=0;cpTotal=speed.userData.cps.length;speedTime=Date.now();speedWin=false;
+  document.getElementById('hudTitle').textContent='SPEED RUN';document.getElementById('hudSub').textContent='Hit all checkpoints!';
   document.getElementById('gameOver').style.display='none';
 }
 
 function updateSpeedrun(){
-  if(!speedGroup)return;
-
-  if(player.y<-5){
-    const sp=speedGroup.userData.spawn;
-    player.x=sp.x;player.y=sp.y;player.z=sp.z;
-    player.vx=0;player.vy=0;player.vz=0;
-  }
-
-  // Check checkpoint proximity
-  const cps=speedGroup.userData.checkpoints;
-  if(speedNextCP<cps.length){
-    const cp=cps[speedNextCP];
-    const dist=Math.sqrt((player.x-cp.x)**2+(player.z-cp.z)**2);
-    if(dist<4){
-      speedNextCP++;
-      if(speedNextCP>=cps.length){
-        // Finished!
-        speedFinished=true;
-        const elapsed=((Date.now()-speedStartTime)/1000).toFixed(1);
-        document.getElementById('goTitle').textContent='YOU WIN!';
-        document.getElementById('goSub').textContent=`Time: ${elapsed}s`;
-        document.getElementById('gameOver').style.display='flex';
-      }
+  if(!speed)return;
+  if(P.y<-10){const sp=speed.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;}
+  const cps=speed.userData.cps;
+  if(cpNext<cpTotal){
+    const cp=cps[cpNext];
+    if(Math.sqrt((P.x-cp.x)**2+(P.z-cp.z)**2)<5)cpNext++;
+    if(cpNext>=cpTotal&&!speedWin){
+      speedWin=true;const bonus=600;P.money+=bonus;totalMoney+=bonus;
+      const elapsed=((Date.now()-speedTime)/1000).toFixed(1);
+      document.getElementById('goTitle').textContent='YOU WIN!';
+      document.getElementById('goSub').textContent=`Time: ${elapsed}s | +$${bonus}`;
+      document.getElementById('gameOver').style.display='flex';
     }
   }
+  document.getElementById('hudSub').textContent=`CP: ${cpNext}/${cpTotal} | Time: ${((Date.now()-speedTime)/1000).toFixed(1)}s`;
+}
 
-  const elapsed=((Date.now()-speedStartTime)/1000).toFixed(1);
-  document.getElementById('hudSub').textContent=`CP: ${speedNextCP}/${speedGroup.userData.checkpoints.length} | Time: ${elapsed}s`;
+// ══ ROLEPLAY ════════════════════════════════════════════════
+let rp=null;
+const RP_JOBS=[{name:'Delivery Driver',pay:50,key:'delivery'},{name:'Cashier',pay:30,key:'cashier'},{name:'Farmer',pay:40,key:'farmer'}];
+let rpJob=null,rpJobTimer=0,rpJobActive=false;
+
+function buildRoleplay(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(80,80).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x5da130,roughness:0.85})));
+  // Road
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(80,6).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x555555,roughness:0.9})).translateR(0,0.1,0));
+
+  // Houses
+  const housePositions=[[-15,-15],[15,-15],[-15,15],[15,15],[0,-30]];
+  housePositions.forEach((h,i)=>{
+    const ho=box(8,5,8,0xcc8844);ho.position.set(h[0],2.5,h[1]);g.add(ho);
+    const roof=box(9,0.5,9,0xcc4444);roof.position.set(h[0],5.2,h[1]);g.add(roof);
+    const door=box(1.5,2.5,0.2,0x444444);door.position.set(h[0],1.5,h[1]+4);g.add(door);
+    for(let wx=-2;wx<=2;wx+=2){
+      const win=box(1,1,0.2,0x4488ff);win.position.set(h[0]+wx,2.5,h[1]+4);win.material.transparent=true;win.material.opacity=0.5;g.add(win);
+    }
+  });
+
+  // Job board
+  const jb=box(6,4,0.5,0x888844);jb.position.set(0,2,-10);g.add(jb);
+  const jbLabel=label('JOBS - Press E','#ffcc00',14,256);jbLabel.position.set(0,3,-9.8);g.add(jbLabel);
+  g.userData.jobBoard={x:0,z:-10};
+
+  // Shop
+  const shop=box(10,4,10,0x444488);shop.position.set(-25,2,20);g.add(shop);
+  const shopLabel=label('SHOP','#4488ff',18);shopLabel.position.set(-25,4.5,20);g.add(shopLabel);
+
+  g.userData.spawn={x:0,y:1,z:10};
+  return g;
+}
+
+function initRoleplay(){
+  clearGame();rp=buildRoleplay();S.add(rp);
+  const sp=rp.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='roleplay';rpJob=null;rpJobActive=false;
+  document.getElementById('hudTitle').textContent='ROLEPLAY';document.getElementById('hudSub').textContent='Get a job, buy a house, live the life!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateRoleplay(){
+  if(!rp)return;
+  // Active job
+  if(rpJobActive){
+    rpJobTimer+=dt;
+    if(rpJobTimer>5){
+      rpJobActive=false;
+      const pay=rpJob?rpJob.pay:20;
+      P.money+=pay;totalMoney+=pay;
+      document.getElementById('hudSub').textContent=`$${pay} earned! Get another job at the board.`;
+      document.getElementById('interact').style.display='none';
+    }else{
+      document.getElementById('hudSub').textContent=`Working... ${(5-rpJobTimer).toFixed(1)}s remaining`;
+    }
+  }
+  // Job board interaction
+  if(interactTarget&&interactTarget.type==='job_board'&&!rpJobActive){
+    document.getElementById('interactTxt').textContent='[E] Take Job (Delivery - $50)';
+    if(K['e']){K['e']=false;rpJob=RP_JOBS[0];rpJobActive=true;rpJobTimer=0;}
+  }
+}
+
+// ══ SIMULATOR ═══════════════════════════════════════════════
+let sim=null;
+const PET_TYPES=[{name:'Dog',color:0xcc8844},{name:'Cat',color:0xff8844},{name:'Dragon',color:0xff4444},{name:'Unicorn',color:0xff88ff},{name:'Panda',color:0x222222}];
+let simPets=[],simPetCount={};
+
+function buildSimulator(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(80,80).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x88cc44,roughness:0.85})));
+  // Pet nursery
+  const nursery=box(20,3,20,0xff88dd);nursery.material.transparent=true;nursery.material.opacity=0.2;nursery.position.set(0,1.5,0);g.add(nursery);
+  const lb=label('PET ISLAND - Collect them all!','#ff88ff',16,300);lb.position.set(0,4,0);g.add(lb);
+  g.userData.spawn={x:0,y:1,z:15};
+  return g;
+}
+
+function initSimulator(){
+  clearGame();sim=buildSimulator();S.add(sim);
+  const sp=sim.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='simulator';simPets=[];simPetCount={};
+  document.getElementById('hudTitle').textContent='SIMULATOR';document.getElementById('hudSub').textContent='Find and collect pets! Walk near them.';
+  document.getElementById('gameOver').style.display='none';
+  // Spawn pets
+  PET_TYPES.forEach((pt,i)=>{
+    for(let j=0;j<5;j++){
+      const x=(Math.random()-0.5)*50,z=(Math.random()-0.5)*50;
+      const pet=sphere(0.5,pt.color);pet.position.set(x,0.5,z);S.add(pet);
+      simPets.push({mesh:pet,x,z,type:i,name:pt.name,color:pt.color,collected:false});
+    }
+  });
+}
+
+function updateSimulator(){
+  if(!sim)return;
+  let collected=0;
+  simPets.forEach(pet=>{
+    if(!pet.collected){
+      const dist=Math.sqrt((P.x-pet.x)**2+(P.z-pet.z)**2);
+      if(dist<3){
+        pet.collected=true;S.remove(pet.mesh);
+        simPetCount[pet.type]=(simPetCount[pet.type]||0)+1;
+        petCount++;
+        const bonus=100;
+        P.money+=bonus;totalMoney+=bonus;
+      }
+    }else{collected++;}
+  });
+  document.getElementById('hudSub').textContent=`Pets: ${petCount} | +$100 each | ${simPets.filter(p=>!p.collected).length} remaining`;
+  document.getElementById('hudTitle').textContent=`SIMULATOR - ${petCount} Pets`;
+}
+
+// ══ BATTLE ══════════════════════════════════════════════════
+let battle=null,battleObjects=[],battleScore=0,battleActive=true;
+
+function buildBattle(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(60,60).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x664444,roughness:0.8})));
+  // Walls
+  for(let s of[-1,1]){g.add(box(60,5,0.5,0x666666).translateR(0,2.5,s*30));g.add(box(0.5,5,60,0x666666).translateR(s*30,2.5,0));}
+  g.userData.spawn={x:0,y:1,z:0};
+  return g;
+}
+
+function initBattle(){
+  clearGame();battle=buildBattle();S.add(battle);
+  const sp=battle.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='battle';battleScore=0;battleActive=true;
+  document.getElementById('hudTitle').textContent='BATTLE ARENA';
+  document.getElementById('hudSub').textContent='Dodge the targets! Score: 0';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateBattle(){
+  if(!battle||!battleActive)return;
+  // Spawning targets
+  if(Math.random()<0.02){
+    const x=(Math.random()-0.5)*50,z=(Math.random()-0.5)*50;
+    const target=sphere(1,0xff4444);target.position.set(x,0.5,z);
+    S.add(target);
+    const vy=5+Math.random()*8;
+    battleObjects.push({mesh:target,x,z,vy,life:5});
+  }
+  // Update targets
+  for(let i=battleObjects.length-1;i>=0;i--){
+    const o=battleObjects[i];
+    o.vy-=20*dt;
+    o.mesh.position.y+=o.vy*dt;
+    if(o.mesh.position.y<0.5){o.vy=Math.abs(o.vy)*0.7;if(o.vy<1){S.remove(o.mesh);battleObjects.splice(i,1);continue;}}
+    // Check collision with player
+    if(Math.sqrt((P.x-o.mesh.position.x)**2+(P.z-o.mesh.position.z)**2)<2&&Math.abs(P.y+1-o.mesh.position.y)<2){
+      S.remove(o.mesh);battleObjects.splice(i,1);
+      battleActive=false;
+      const score=battleScore*10;
+      P.money+=score;totalMoney+=score;
+      document.getElementById('goTitle').textContent='GAME OVER';
+      document.getElementById('goSub').textContent=`Score: ${battleScore} | +$${score}`;
+      document.getElementById('gameOver').style.display='flex';
+    }
+    if(Math.random()<0.005){battleScore++;document.getElementById('hudSub').textContent=`Dodge the targets! Score: ${battleScore}`;}
+  }
+}
+
+// ══ PARKOUR ═════════════════════════════════════════════════
+let parkour=null,pkWin=false;
+
+function buildParkour(){
+  const g=new THREE.Group();
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(200,30).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x444488,roughness:0.8})));
+  const cols=[0x44aa44,0x4488cc,0xcc8844,0xaa44cc,0x44ccaa,0xcc4444];
+  for(let i=0;i<20;i++){
+    const w=2+Math.random()*3|0,d=2+Math.random()*3|0;
+    const p=box(w,1+Math.random()*3|0,d,cols[i%cols.length]);p.position.set(-i*8,0.5+i*0.5,(Math.random()-0.5)*5);g.add(p);
+  }
+  const fn=box(12,0.5,6,0x00ff44);fn.position.set(-162,10.5,0);fn.material.transparent=true;fn.material.opacity=0.5;g.add(fn);
+  g.userData.spawn={x:0,y:1,z:0};
+  return g;
+}
+
+function initParkour(){
+  clearGame();parkour=buildParkour();S.add(parkour);
+  const sp=parkour.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;
+  mode='parkour';pkWin=false;
+  document.getElementById('hudTitle').textContent='PARKOUR';document.getElementById('hudSub').textContent='Climb and jump to the top!';
+  document.getElementById('gameOver').style.display='none';
+}
+
+function updateParkour(){
+  if(!parkour)return;
+  if(P.y<-10){const sp=parkour.userData.spawn;P.x=sp.x;P.y=sp.y;P.z=sp.z;P.vx=P.vy=P.vz=0;}
+  if(P.x<-161&&Math.abs(P.z)<4&&!pkWin){
+    pkWin=true;const bonus=700;P.money+=bonus;totalMoney+=bonus;
+    document.getElementById('goTitle').textContent='YOU WIN!';
+    document.getElementById('goSub').textContent=`+$${bonus}`;
+    document.getElementById('gameOver').style.display='flex';
+  }
+  document.getElementById('hudSub').textContent=`Height: ${P.y.toFixed(1)}m`;
 }
 
 // ══ GAME MANAGEMENT ══════════════════════════════════════════
 function clearGame(){
-  [obbyGroup,lavaGroup,speedGroup,lobby].forEach(g=>{
-    if(g){scene.remove(g);g=null;}
+  [tycoon,obby,deathrun,speed,rp,sim,battle,parkour,hub].forEach(g=>{
+    if(g&&g!==hub){try{S.remove(g);}catch(e){}}
   });
+  battleObjects.forEach(o=>{try{S.remove(o.mesh);}catch(e){}});battleObjects=[];
+  simPets.forEach(p=>{try{if(!p.collected)S.remove(p.mesh);}catch(e){}});simPets=[];
+  if(hub){try{S.remove(hub);hub=null;}catch(e){}}
 }
 
-function backToLobby(){
+function backToHub(){
   clearGame();
-  initLobby();
+  // Reset player state for hub
+  P.vx=P.vy=P.vz=0;
+  closeShop();
+  initHub();
   document.getElementById('gameOver').style.display='none';
 }
 
-function startGame(game){
-  switch(game){
+function startGame(g){
+  switch(g){
+    case 'tycoon':initTycoon();break;
     case 'obby':initObby();break;
-    case 'lava':initLava();break;
+    case 'deathrun':initDeathrun();break;
     case 'speedrun':initSpeedrun();break;
+    case 'roleplay':initRoleplay();break;
+    case 'simulator':initSimulator();break;
+    case 'battle':initBattle();break;
+    case 'parkour':initParkour();break;
+    default:initHub();
   }
 }
 
-// ══ PLAYER PHYSICS ══════════════════════════════════════════
+// ══ PLAYER ══════════════════════════════════════════════════
 function updatePlayer(){
   let mx=0,mz=0;
-  if(keys['w']||keys['arrowup'])mz-=1;
-  if(keys['s']||keys['arrowdown'])mz+=1;
-  if(keys['a']||keys['arrowleft'])mx-=1;
-  if(keys['d']||keys['arrowright'])mx+=1;
-
-  const len=Math.sqrt(mx*mx+mz*mz);
-  if(len>0){mx/=len;mz/=len;}
-
-  const fwd=player.yaw;
-  const rmx=mx*Math.cos(fwd)-mz*Math.sin(fwd);
-  const rmz=mx*Math.sin(fwd)+mz*Math.cos(fwd);
-
-  const targetVx=rmx*player.speed;
-  const targetVz=rmz*player.speed;
-  player.vx+=(targetVx-player.vx)*dt*12;
-  player.vz+=(targetVz-player.vz)*dt*12;
-
-  player.vy+=GRAVITY*dt;
-  player.y+=player.vy*dt;
-  player.x+=player.vx*dt;
-  player.z+=player.vz*dt;
-
-  // Ground collision (y=0 is ground level)
-  if(player.y<0.5){
-    player.y=0.5;
-    player.vy=0;
-    player.onGround=true;
-  }else{
-    player.onGround=false;
-  }
-
-  // Jump
-  if((keys[' ']||keys['space'])&&player.onGround&&isLocked){
-    player.vy=player.jump;
-    player.onGround=false;
-    keys[' ']=false;
-  }
+  if(K['w']||K['arrowup'])mz-=1;
+  if(K['s']||K['arrowdown'])mz+=1;
+  if(K['a']||K['arrowleft'])mx-=1;
+  if(K['d']||K['arrowright'])mx+=1;
+  const l=Math.sqrt(mx*mx+mz*mz);
+  if(l>0){mx/=l;mz/=l;}
+  const rm=mx*Math.cos(P.yaw)-mz*Math.sin(P.yaw);
+  const rz=mx*Math.sin(P.yaw)+mz*Math.cos(P.yaw);
+  P.vx+=(rm*MS-P.vx)*dt*12;
+  P.vz+=(rz*MS-P.vz)*dt*12;
+  P.vy+=G*dt;
+  P.y+=P.vy*dt;P.x+=P.vx*dt;P.z+=P.vz*dt;
+  if(P.y<0.5){P.y=0.5;P.vy=0;P.onGround=true;}else{P.onGround=false;}
+  if((K[' ']||K['space'])&&P.onGround&&isLocked){P.vy=JF;P.onGround=false;K[' ']=false;}
 }
 
 // ══ CAMERA ══════════════════════════════════════════════════
-function updateCamera(){
-  cam.position.set(player.x,player.y+1.4,player.z);
-  const euler=new THREE.Euler(player.pitch,player.yaw,0,'YXZ');
-  cam.quaternion.setFromEuler(euler);
+function updateCam(){
+  C.position.set(P.x,P.y+1.4,P.z);
+  C.quaternion.setFromEuler(new THREE.Euler(P.pitch,P.yaw,0,'YXZ'));
 }
 
 // ══ INTERACTION ═════════════════════════════════════════════
 function checkInteraction(){
-  const interactEl=document.getElementById('interact');
-  if(gameMode!=='lobby'||!lobby){
-    interactEl.style.display='none';
-    return;
-  }
-
-  // Raycast for portals
-  raycaster.setFromCamera({x:0,y:0},cam);
-  const hits=raycaster.intersectObjects(lobby.children,true);
-  let found=null;
-  for(const hit of hits){
-    const p=hit.point;
-    // Check if near any portal
-    if(lobby.userData.portals){
-      for(const portal of lobby.userData.portals){
-        const dist=Math.sqrt((p.x-portal.pos.x)**2+(p.z-portal.pos.z)**2);
-        if(dist<4&&Math.abs(p.y-portal.pos.y)<4){
-          found=portal;break;
+  const ie=document.getElementById('interact');
+  document.getElementById('interactTxt').textContent='to interact';
+  interactTarget=null;
+  if(mode==='hub'&&hub){
+    RC.setFromCamera({x:0,y:0},C);
+    const hits=RC.intersectObjects(hub.children,true);
+    let found=null;
+    for(const h2 of hits){
+      if(hub.userData.portals){
+        for(const p of hub.userData.portals){
+          if(Math.sqrt((h2.point.x-p.x)**2+(h2.point.z-p.z)**2)<5&&Math.abs(h2.point.y-p.y)<4){found=p;break;}
         }
       }
+      if(found)break;
     }
-    if(found)break;
-  }
-
-  if(found){
-    interactEl.style.display='block';
-    if(keys['e']||keys['E']){
-      keys['e']=false;
-      startGame(found.game);
+    if(found){
+      ie.style.display='block';
+      document.getElementById('interactTxt').textContent=`[E] Enter ${found.game.toUpperCase()}`;
+      if(K['e']){K['e']=false;startGame(found.game);}
+    }else{ie.style.display='none';}
+  }else if(mode==='roleplay'&&rp){
+    RC.setFromCamera({x:0,y:0},C);
+    const hits=RC.intersectObjects(rp.children);
+    // Check job board
+    const jb=rp.userData.jobBoard;
+    const jbDist=Math.sqrt((P.x-jb.x)**2+(P.z-jb.z)**2);
+    if(jbDist<5){
+      ie.style.display='block';
+      document.getElementById('interactTxt').textContent='[E] View Jobs';
+      interactTarget={type:'job_board'};
+      if(K['e']&&!rpJobActive){K['e']=false;rpJob=RP_JOBS[0];rpJobActive=true;rpJobTimer=0;ie.style.display='none';}
+    }else{ie.style.display='none';}
+  }else if(mode==='tycoon'&&tycoon){
+    RC.setFromCamera({x:0,y:0},C);
+    const hits=RC.intersectObjects(tycoon.children);
+    let foundStand=null;
+    for(const h2 of hits){
+      const x=h2.object.position.x,z2=h2.object.position.z;
+      for(const s of tycoon.userData.stands){
+        if(Math.abs(x-s.x)<3&&Math.abs(z2-s.z)<3&&!s.owned&&P.money>=s.cost){
+          foundStand=s;break;}
+      }
+      if(foundStand)break;
     }
-  }else{
-    interactEl.style.display='none';
-  }
+    if(foundStand){
+      ie.style.display='block';
+      document.getElementById('interactTxt').textContent=`[E] Buy ${foundStand.name} - $${foundStand.cost}`;
+      interactTarget={type:'tycoon_stand',index:foundStand.index};
+      if(K['e']){K['e']=false;
+        P.money-=foundStand.cost;foundStand.owned=true;
+        tycoon.children.forEach(c=>{
+          if(c.position.x===foundStand.x&&c.position.z===foundStand.z&&c.geometry&&c.geometry.type==='BoxGeometry')
+            c.material.color.setHex(0x44aa44);
+        });
+        ie.style.display='none';
+      }
+    }else{ie.style.display='none';}
+  }else{ie.style.display='none';}
 }
+
+function closeShop(){document.getElementById('shop').style.display='none';shopOpen=false;}
 
 // ══ CONTROLS ════════════════════════════════════════════════
-document.addEventListener('keydown',e=>{
-  keys[e.key.toLowerCase()]=true;
-  if(e.key===' '&&isLocked)e.preventDefault();
-});
+document.addEventListener('keydown',e=>{K[e.key.toLowerCase()]=true;if(e.key===' '&&isLocked)e.preventDefault();if(e.key==='Escape'&&isLocked)document.exitPointerLock();});
+document.addEventListener('keyup',e=>{K[e.key.toLowerCase()]=false;});
+R.domElement.addEventListener('click',()=>{if(!isLocked)R.domElement.requestPointerLock();});
+document.addEventListener('pointerlockchange',()=>{isLocked=!!document.pointerLockElement;});
+document.addEventListener('mousemove',e=>{if(!isLocked)return;P.yaw-=e.movementX*0.003;P.pitch-=e.movementY*0.003;P.pitch=Math.max(-Math.PI/2.2,Math.min(Math.PI/2.2,P.pitch));});
 
-document.addEventListener('keyup',e=>{
-  keys[e.key.toLowerCase()]=false;
-});
+// ══ MAIN ════════════════════════════════════════════════════
+let fc=0,fl=0,lt=0;
 
-// Pointer lock
-renderer.domElement.addEventListener('click',()=>{
-  if(!isLocked)renderer.domElement.requestPointerLock();
-});
-
-document.addEventListener('pointerlockchange',()=>{
-  isLocked=!!document.pointerLockElement;
-});
-
-document.addEventListener('mousemove',e=>{
-  if(!isLocked)return;
-  player.yaw-=e.movementX*0.003;
-  player.pitch-=e.movementY*0.003;
-  player.pitch=Math.max(-Math.PI/2.2,Math.min(Math.PI/2.2,player.pitch));
-});
-
-// ══ RAYCASTER ═══════════════════════════════════════════════
-const raycaster=new THREE.Raycaster();
-
-// ══ MAIN LOOP ═══════════════════════════════════════════════
-let frameCount=0,fpsLast=0;
-
-function animate(time){
-  requestAnimationFrame(animate);
-  dt=Math.min((time-(lastTime||time))/1000,0.05);
-  lastTime=time;
-
+function anim(t){
+  requestAnimationFrame(anim);
+  dt=Math.min((t-(lt||t))/1000,0.05);
+  lt=t;
   updatePlayer();
-  updateCamera();
-
-  switch(gameMode){
-    case 'lobby':break;
+  updateCam();
+  switch(mode){
+    case 'tycoon':updateTycoon();break;
     case 'obby':updateObby();break;
-    case 'lava':updateLava();break;
+    case 'deathrun':updateDeathrun();break;
     case 'speedrun':updateSpeedrun();break;
+    case 'roleplay':updateRoleplay();break;
+    case 'simulator':updateSimulator();break;
+    case 'battle':updateBattle();break;
+    case 'parkour':updateParkour();break;
   }
-
   checkInteraction();
-
-  renderer.render(scene,cam);
-
-  // FPS
-  frameCount++;
-  if(time-fpsLast>1000){
-    document.getElementById('topRight').innerHTML=
-      `FPS: ${frameCount}<br>Mode: ${gameMode.toUpperCase()}`;
-    frameCount=0;fpsLast=time;
-  }
+  R.render(S,C);
+  fc++;
+  if(t-fl>1000){document.getElementById('topRight').innerHTML=`FPS: ${fc}<br>Mode: ${mode.toUpperCase()}<br>$${Math.floor(P.money).toLocaleString()}`;fc=0;fl=t;}
 }
 
-let lastTime=0;
-
 // ══ RESIZE ════════════════════════════════════════════════════
-window.addEventListener('resize',()=>{
-  cam.aspect=window.innerWidth/window.innerHeight;
-  cam.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
+window.addEventListener('resize',()=>{C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
 // ══ LOADING ═══════════════════════════════════════════════════
 let lp=0;
 const li=setInterval(()=>{
   lp+=Math.random()*15+5;
-  if(lp>=100){
-    lp=100;clearInterval(li);
+  if(lp>=100){lp=100;clearInterval(li);
     document.getElementById('loadBar').style.width='100%';
-    setTimeout(()=>{
-      document.getElementById('loading').style.opacity='0';
-      setTimeout(()=>{
-        document.getElementById('loading').style.display='none';
-        initLobby();
-        animate(0);
-      },800);
-    },400);
+    setTimeout(()=>{document.getElementById('loading').style.opacity='0';
+      setTimeout(()=>{document.getElementById('loading').style.display='none';initHub();anim(0);},800);},400);
   }
   document.getElementById('loadBar').style.width=lp+'%';
 },150);
