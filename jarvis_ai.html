@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>J.A.R.V.I.S - AI Assistant</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#080c18;font-family:'Segoe UI',system-ui,sans-serif;color:#fff;height:100vh;overflow:hidden;}
+#app{display:flex;flex-direction:column;height:100vh;max-width:900px;margin:0 auto;padding:0 16px;}
+#top{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+#top .logo{font-size:20px;font-weight:700;background:linear-gradient(135deg,#0af,#4df);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#top .sub{font-size:11px;color:rgba(255,255,255,0.2);margin-left:auto;}
+#top .sub span{color:rgba(255,255,255,0.35);}
+#settingsBtn{background:none;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:0.2s;}
+#settingsBtn:hover{border-color:#0af;color:#0af;}
+/* Messages */
+#msgs{flex:1;overflow-y:auto;padding:16px 0;scroll-behavior:smooth;}
+#msgs::-webkit-scrollbar{width:4px;}
+#msgs::-webkit-scrollbar-track{background:transparent;}
+#msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px;}
+.msg{display:flex;gap:10px;margin-bottom:14px;animation:fadeIn 0.3s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg .av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.msg.user .av{background:rgba(0,170,255,0.15);color:#0af;}
+.msg.ai .av{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);}
+.msg .b{background:rgba(255,255,255,0.04);padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);max-width:85%;line-height:1.6;font-size:14px;color:rgba(255,255,255,0.85);white-space:pre-wrap;word-break:break-word;}
+.msg.user .b{background:rgba(0,170,255,0.08);border-color:rgba(0,170,255,0.1);}
+.msg .b code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:13px;font-family:'Cascadia Code',monospace;}
+.msg .b .fp{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,0.04);border-radius:6px;margin-bottom:8px;font-size:12px;color:rgba(255,255,255,0.5);}
+.msg .b .fp img{width:16px;height:16px;border-radius:2px;}
+/* Loading dots */
+.typing .b::after{content:'';display:inline-block;width:4px;height:4px;border-radius:50%;background:#0af;margin-left:6px;animation:dotPulse 1s infinite;}
+@keyframes dotPulse{0%,100%{opacity:0.3}50%{opacity:1}}
+/* Input */
+#inputArea{display:flex;gap:8px;padding:12px 0 20px;align-items:flex-end;flex-shrink:0;}
+#fileInfo{display:none;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,170,255,0.08);border:1px solid rgba(0,170,255,0.12);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:8px;flex-shrink:0;}
+#fileInfo .rm{background:none;border:none;color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;padding:0 4px;}
+#fileInfo .rm:hover{color:#f44;}
+#textInput{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:0.2s;resize:none;}
+#textInput:focus{border-color:rgba(0,170,255,0.3);background:rgba(255,255,255,0.06);}
+#textInput::placeholder{color:rgba(255,255,255,0.15);}
+.ibtn{width:42px;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.3);cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.ibtn:hover{border-color:#0af;color:#0af;background:rgba(0,170,255,0.08);}
+#sendBtn{border-color:transparent;background:#0af;color:#fff;font-size:14px;}
+#sendBtn:hover{background:#0cf;border-color:transparent;color:#fff;}
+#sendBtn:disabled{opacity:0.3;cursor:not-allowed;}
+#voiceBtn.listening{background:rgba(255,68,68,0.15);border-color:#f44;color:#f44;animation:recPulse 1s infinite;}
+@keyframes recPulse{0%{box-shadow:0 0 0 rgba(255,68,68,0)}50%{box-shadow:0 0 16px rgba(255,68,68,0.15)}100%{box-shadow:0 0 0 rgba(255,68,68,0)}}
+/* Orb */
+#orbWrap{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;opacity:0.06;transition:opacity 0.5s;}
+#orbWrap.active{opacity:0.15;}
+#orb{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(0,170,255,0.3),rgba(0,170,255,0.05) 60%,transparent);animation:orbPulse 3s infinite;}
+@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+/* Settings panel */
+#settingsOverlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:100;backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+#settingsOverlay.open{display:flex;}
+#settingsPanel{background:#0e1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:28px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;}
+#settingsPanel h2{font-size:18px;margin-bottom:20px;color:rgba(255,255,255,0.8);}
+#settingsPanel label{display:block;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:4px;margin-top:16px;}
+#settingsPanel input[type=text],#settingsPanel select{padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;color:#fff;font-size:13px;outline:none;width:100%;}
+#settingsPanel select option{background:#0e1424;color:#fff;}
+#settingsPanel input:focus{border-color:rgba(0,170,255,0.3);}
+#settingsPanel .hint{font-size:11px;color:rgba(255,255,255,0.15);margin-top:4px;}
+#settingsPanel .row{display:flex;align-items:center;gap:12px;margin-top:12px;}
+#settingsPanel .row label{margin:0;}
+#settingsPanel button{padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;margin-top:18px;}
+#settingsPanel .saveBtn{background:#0af;color:#fff;}
+#settingsPanel .saveBtn:hover{background:#0cf;}
+/* File drop zone */
+#dropZone{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:50;background:rgba(0,170,255,0.05);border:2px dashed rgba(0,170,255,0.2);align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.3);backdrop-filter:blur(4px);}
+#dropZone.show{display:flex;}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);padding:8px 20px;border-radius:8px;font-size:12px;color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.06);z-index:60;display:none;white-space:nowrap;}
+/* Responsive */
+@media(max-width:600px){#msgs{padding:10px 0;}.msg .b{font-size:13px;padding:10px 12px;}#textInput{font-size:13px;padding:10px 12px;}.ibtn{width:38px;height:38px;}}
+</style>
+</head>
+<body>
+<div id="dropZone">📄 Drop file here</div>
+<div id="app">
+  <div id="top">
+    <div class="logo">◆ J.A.R.V.I.S</div>
+    <div class="sub">AI <span id="modelLabel">gpt-3.5-turbo</span></div>
+    <button id="settingsBtn">⚙ Settings</button>
+  </div>
+  <div id="msgs">
+    <div class="msg ai"><div class="av">●</div><div class="b">Hello, I'm J.A.R.V.I.S. Ask me anything, or attach a file for me to analyze.</div></div>
+  </div>
+  <div id="fileInfo"></div>
+  <div id="inputArea">
+    <button class="ibtn" id="attachBtn" title="Attach file">📎</button>
+    <input id="fileInput" type="file" multiple style="display:none">
+    <textarea id="textInput" rows="1" placeholder="Ask anything..." style="height:42px"></textarea>
+    <button class="ibtn" id="voiceBtn" title="Voice input">🎤</button>
+    <button class="ibtn" id="sendBtn" title="Send">➤</button>
+  </div>
+</div>
+<div id="orbWrap"><div id="orb"></div></div>
+<div id="settingsOverlay">
+  <div id="settingsPanel">
+    <h2>⚙ Settings</h2>
+    <label>OpenAI API Key</label>
+    <input type="text" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+    <div class="hint">Your key stays on this device. Get one at platform.openai.com/api-keys</div>
+    <label>Model</label>
+    <select id="modelSelect">
+      <option value="gpt-3.5-turbo">GPT-3.5 Turbo (fast, cheap)</option>
+      <option value="gpt-4">GPT-4 (smart, slower)</option>
+      <option value="gpt-4-turbo">GPT-4 Turbo (best)</option>
+    </select>
+    <label>Voice Response</label>
+    <div class="row">
+      <label><input type="checkbox" id="voiceToggle" checked> Speak responses aloud</label>
+    </div>
+    <div class="hint">Uses browser text-to-speech</div>
+    <button class="saveBtn" onclick="saveSettings()">Save</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+// ══ STATE ═════════════════════════════════════════════════════
+const state={
+  apiKey: localStorage.getItem('j_key')||'',
+  model: localStorage.getItem('j_model')||'gpt-3.5-turbo',
+  voiceOn: localStorage.getItem('j_voice')!=='false',
+  messages: JSON.parse(localStorage.getItem('j_msgs')||'[]'),
+  listening: false,
+  processing: false,
+  files: [],
+  speechRec: null,
+  synth: window.speechSynthesis
+};
+const el=(id)=>document.getElementById(id);
+const msgsEl=el('msgs');
+
+// ══ INIT ═════════════════════════════════════════════════════
+function init(){
+  el('apiKeyInput').value=state.apiKey;
+  el('modelSelect').value=state.model;
+  el('voiceToggle').checked=state.voiceOn;
+  el('modelLabel').textContent=state.model;
+  if(state.messages.length>0){
+    msgsEl.innerHTML='';
+    state.messages.forEach(m=>renderMsg(m.role,m.content,m.files));
+  }
+}
+init();
+
+// ══ API ══════════════════════════════════════════════════════
+async function askAI(userText,files){
+  if(!state.apiKey){addMsg('ai','Please set your OpenAI API key in Settings (⚙) to get AI responses.');return;}
+  const systemMsg='You are J.A.R.V.I.S, a helpful AI assistant. Respond conversationally and thoroughly.';
+  const msgs=[{role:'system',content:systemMsg}];
+  // Include recent history
+  const recent=state.messages.slice(-10);
+  recent.forEach(m=>msgs.push({role:m.role,content:m.content}));
+  // Build content with file context
+  let content=userText;
+  if(files&&files.length>0){
+    const fileParts=files.map(f=>`[File: ${f.name}]\n${f.content||'(image attached)'}`);
+    content=`${userText}\n\nContext from attached files:\n${fileParts.join('\n---\n')}`;
+  }
+  msgs.push({role:'user',content});
+  // If there are image files, use vision
+  const hasImages=files&&files.some(f=>f.type.startsWith('image/'));
+  if(hasImages&&(state.model.includes('gpt-4')||state.model.includes('gpt-4-turbo'))){
+    const visionContent=[{type:'text',text:userText}];
+    for(const f of files){
+      if(f.type.startsWith('image/')&&f.dataUrl){
+        visionContent.push({type:'image_url',image_url:{url:f.dataUrl,detail:'high'}});
+      }else if(f.content){
+        visionContent.push({type:'text',text:`[File: ${f.name}]\n${f.content}`});
+      }
+    }
+    msgs[msgs.length-1].content=visionContent;
+  }
+  try{
+    const resp=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.apiKey},
+      body:JSON.stringify({model:state.model,messages:msgs,max_tokens:2048})
+    });
+    if(!resp.ok){
+      const err=await resp.text();
+      throw new Error(`API ${resp.status}: ${err}`);
+    }
+    const data=await resp.json();
+    return data.choices[0].message.content;
+  }catch(e){
+    throw e;
+  }
+}
+
+// ══ MESSAGES ═════════════════════════════════════════════════
+function addMsg(role,content,files){
+  state.messages.push({role,content,files:files||null});
+  if(state.messages.length>50)state.messages.shift();
+  localStorage.setItem('j_msgs',JSON.stringify(state.messages));
+  renderMsg(role,content,files);
+}
+
+function renderMsg(role,content,files){
+  const d=document.createElement('div');
+  d.className='msg '+role;
+  d.innerHTML=`<div class="av">${role==='user'?'▸':'●'}</div><div class="b">${files&&files.length?files.map(f=>`<div class="fp">${f.type.startsWith('image/')?`<img src="${f.dataUrl}">`:'📄'} ${f.name}</div>`).join(''):''}${escapeHtml(content)}</div>`;
+  msgsEl.appendChild(d);
+  msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+function addTyping(){
+  const d=document.createElement('div');
+  d.className='msg ai typing';d.id='typing';
+  d.innerHTML='<div class="av">●</div><div class="b"></div>';
+  msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;
+}
+
+function removeTyping(){
+  const t=document.getElementById('typing');
+  if(t)t.remove();
+}
+
+function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+// ══ SEND ═════════════════════════════════════════════════════
+async function sendMessage(){
+  const inp=el('textInput');
+  const text=inp.value.trim();
+  const files=state.files;
+  if(!text&&files.length===0)return;
+  if(state.processing)return;
+  inp.value='';autoResize(inp);
+  state.processing=true;el('sendBtn').disabled=true;
+  addMsg('user',text||'(file attached)',files);
+  state.files=[];updateFileInfo();
+  addTyping();
+  try{
+    const reply=await askAI(text,files);
+    removeTyping();
+    addMsg('ai',reply||'(no response)');
+    if(state.voiceOn)speak(reply);
+  }catch(e){
+    removeTyping();
+    addMsg('ai','Error: '+e.message);
+  }
+  state.processing=false;el('sendBtn').disabled=false;
+}
+
+// ══ VOICE INPUT ══════════════════════════════════════════════
+function startVoice(){
+  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec){showToast('Speech recognition not supported');return;}
+  if(state.listening){stopVoice();return;}
+  const rec=new SpeechRec();
+  rec.lang='en-US';rec.interimResults=true;rec.continuous=false;
+  state.speechRec=rec;
+  rec.onresult=(e)=>{
+    let final='';
+    for(let i=e.resultIndex;i<e.results.length;i++)
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+    if(final){
+      el('textInput').value+=final;
+      autoResize(el('textInput'));
+    }
+  };
+  rec.onerror=(e)=>{
+    if(e.error!='aborted'&&e.error!='no-speech')showToast('Voice error: '+e.error);
+    state.listening=false;el('voiceBtn').classList.remove('listening');
+  };
+  rec.onend=()=>{
+    state.listening=false;el('voiceBtn').classList.remove('listening');
+  };
+  rec.start();
+  state.listening=true;
+  el('voiceBtn').classList.add('listening');
+  showToast('Listening...');
+}
+
+function stopVoice(){
+  if(state.speechRec){try{state.speechRec.stop()}catch(e){}state.speechRec=null;}
+  state.listening=false;el('voiceBtn').classList.remove('listening');
+}
+
+// ══ SPEECH OUTPUT ═══════════════════════════════════════════
+function speak(text){
+  if(state.synth.speaking)state.synth.cancel();
+  const u=new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g,''));
+  u.rate=0.92;u.pitch=1.05;
+  state.synth.speak(u);
+}
+
+// ══ FILES ════════════════════════════════════════════════════
+async function handleFiles(fileList){
+  for(const file of fileList){
+    const maxSize=10*1024*1024;
+    if(file.size>maxSize){showToast(file.name+' is too large (max 10MB)');continue;}
+    const entry={name:file.name,type:file.type,size:file.size};
+    if(file.type.startsWith('image/')){
+      entry.dataUrl=await new Promise((res)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result);
+        r.readAsDataURL(file);
+      });
+    }
+    if(file.type.startsWith('text/')||file.name.match(/\.(txt|md|json|js|py|html|css|xml|csv|log|ini|cfg|sh|bat|ps1|yml|yaml|env|gitignore)$/i)){
+      entry.content=await file.text();
+    }
+    state.files.push(entry);
+  }
+  updateFileInfo();
+}
+
+function updateFileInfo(){
+  const fi=el('fileInfo');
+  if(state.files.length===0){fi.style.display='none';fi.innerHTML='';return;}
+  fi.style.display='flex';
+  fi.innerHTML=state.files.map((f,i)=>`<span>${f.type.startsWith('image/')?'🖼️':'📄'} ${f.name} <button class="rm" onclick="removeFile(${i})">✕</button></span>`).join('');
+}
+
+function removeFile(i){
+  state.files.splice(i,1);
+  updateFileInfo();
+}
+
+// ══ SETTINGS ═════════════════════════════════════════════════
+function saveSettings(){
+  state.apiKey=el('apiKeyInput').value.trim();
+  state.model=el('modelSelect').value;
+  state.voiceOn=el('voiceToggle').checked;
+  localStorage.setItem('j_key',state.apiKey);
+  localStorage.setItem('j_model',state.model);
+  localStorage.setItem('j_voice',state.voiceOn);
+  el('modelLabel').textContent=state.model;
+  el('settingsOverlay').classList.remove('open');
+  showToast('Settings saved');
+}
+// ══ TOAST ═════════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg){
+  const t=el('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.style.display='none';},2500);
+}
+// ══ EVENT LISTENERS ═══════════════════════════════════════════
+el('sendBtn').addEventListener('click',sendMessage);
+el('textInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+el('textInput').addEventListener('input',()=>autoResize(el('textInput')));
+function autoResize(el){
+  el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';
+}
+
+el('voiceBtn').addEventListener('click',()=>{
+  if(state.listening)stopVoice();
+  else startVoice();
+});
+
+el('attachBtn').addEventListener('click',()=>el('fileInput').click());
+el('fileInput').addEventListener('change',(e)=>{
+  if(e.target.files.length)handleFiles(e.target.files);
+  e.target.value='';
+});
+
+el('settingsBtn').addEventListener('click',()=>{
+  el('apiKeyInput').value=state.apiKey;
+  el('modelSelect').value=state.model;
+  el('voiceToggle').checked=state.voiceOn;
+  el('settingsOverlay').classList.toggle('open');
+});
+el('settingsOverlay').addEventListener('click',(e)=>{
+  if(e.target===el('settingsOverlay'))el('settingsOverlay').classList.remove('open');
+});
+
+// Drag & drop
+document.addEventListener('dragover',e=>{e.preventDefault();el('dropZone').classList.add('show');});
+document.addEventListener('dragleave',e=>{e.preventDefault();el('dropZone').classList.remove('show');});
+document.addEventListener('drop',e=>{
+  e.preventDefault();
+  el('dropZone').classList.remove('show');
+  if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);
+});
+
+// Clear old messages on double-click logo
+el('top').addEventListener('dblclick',()=>{
+  state.messages=[];
+  localStorage.setItem('j_msgs','[]');
+  msgsEl.innerHTML='<div class="msg ai"><div class="av">●</div><div class="b">Hello, I\'m J.A.R.V.I.S. Ask me anything, or attach a file for me to analyze.</div></div>';
+  showToast('Conversation cleared');
+});
+</script>
+</body>
+</html>
