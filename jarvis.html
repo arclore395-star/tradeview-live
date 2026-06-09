@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>J.A.R.V.I.S — AI Assistant</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#05080f;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:#fff;height:100vh;width:100vw;}
+canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:30px;}
+#status{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.3);transition:all 0.4s;font-weight:300;}
+#status.active{color:#0af;text-shadow:0 0 20px rgba(0,170,255,0.3);}
+#status.listening{color:#4df;text-shadow:0 0 30px rgba(68,221,255,0.4);animation:pulseText 1.2s infinite;}
+#status.speaking{color:#4f4;text-shadow:0 0 30px rgba(68,255,68,0.3);}
+@keyframes pulseText{0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5}}
+#transcript{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);font-size:15px;color:rgba(255,255,255,0.5);text-align:center;max-width:80vw;transition:opacity 0.3s;min-height:22px;}
+#transcript.highlight{color:#fff;text-shadow:0 0 20px rgba(0,170,255,0.4);}
+#response{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);font-size:22px;font-weight:300;color:#fff;text-align:center;max-width:80vw;text-shadow:0 0 30px rgba(0,170,255,0.15);transition:opacity 0.3s;min-height:30px;letter-spacing:0.5px;}
+#micBtn{position:absolute;top:30px;right:30px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.3);font-size:16px;cursor:pointer;pointer-events:auto;transition:all 0.3s;display:flex;align-items:center;justify-content:center;}
+#micBtn:hover{border-color:#0af;color:#0af;background:rgba(0,170,255,0.1);}
+#micBtn.active{background:rgba(0,255,68,0.1);border-color:#4f4;color:#4f4;animation:pulseBtn 1.2s infinite;}
+@keyframes pulseBtn{0%{box-shadow:0 0 0 rgba(68,255,68,0)}50%{box-shadow:0 0 20px rgba(68,255,68,0.15)}100%{box-shadow:0 0 0 rgba(68,255,68,0)}}
+#clapHint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.08);text-align:center;line-height:1.8;pointer-events:none;transition:opacity 0.5s;}
+#clapHint b{color:rgba(255,255,255,0.15);font-size:28px;display:block;margin-bottom:8px;letter-spacing:2px;}
+#waveform{position:absolute;bottom:0;left:0;width:100%;height:4px;z-index:5;background:rgba(0,170,255,0.05);}
+#waveform .bar{height:100%;width:0%;background:linear-gradient(90deg,#0af,#4df);transition:width 0.05s;border-radius:0 2px 2px 0;}
+#logs{position:absolute;top:30px;left:30px;font-size:10px;color:rgba(255,255,255,0.08);font-family:monospace;line-height:1.6;pointer-events:none;max-height:80vh;overflow:hidden;max-width:300px;}
+#logs div{opacity:0;animation:fadeIn 0.3s forwards;animation-delay:0.1s;}
+@keyframes fadeIn{to{opacity:1}}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="logs"></div>
+  <button id="micBtn" title="Toggle mic">🎤</button>
+  <div id="clapHint"><b>👏</b>CLAP TO WAKE</div>
+  <div id="response"></div>
+  <div id="transcript"></div>
+  <div id="status">INITIALIZING</div>
+  <div id="waveform"><div class="bar" id="waveBar"></div></div>
+</div>
+<script>
+// ══ THREE.JS SCENE ════════════════════════════════════════════
+const S=new THREE.Scene();
+S.background=new THREE.Color(0x05080f);
+const C=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,100);
+C.position.z=5;
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true});
+R.setSize(innerWidth,innerHeight);
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.toneMapping=THREE.ACESFilmicToneMapping;
+document.body.prepend(R.domElement);
+
+// Lights
+const al=new THREE.AmbientLight(0x224466,0.4);
+S.add(al);
+const dl=new THREE.DirectionalLight(0x4488ff,0.8);
+dl.position.set(5,5,5);
+S.add(dl);
+const bl=new THREE.PointLight(0x0af,0.5,10);
+bl.position.set(0,0,3);
+S.add(bl);
+
+// Core orb
+const orbGeo=new THREE.SphereGeometry(1.2,48,48);
+const orbMat=new THREE.MeshPhongMaterial({
+  color:0x0af,emissive:0x0af,emissiveIntensity:0.15,
+  transparent:true,opacity:0.85,shininess:60
+});
+const orb=new THREE.Mesh(orbGeo,orbMat);
+S.add(orb);
+
+// Outer shell (wireframe)
+const shellGeo=new THREE.SphereGeometry(1.5,24,24);
+const shellMat=new THREE.MeshBasicMaterial({
+  color:0x0af,wireframe:true,transparent:true,opacity:0.12
+});
+const shell=new THREE.Mesh(shellGeo,shellMat);
+S.add(shell);
+
+// Inner glow
+const glowGeo=new THREE.SphereGeometry(1.1,32,32);
+const glowMat=new THREE.MeshBasicMaterial({
+  color:0x0af,transparent:true,opacity:0.08
+});
+const glow=new THREE.Mesh(glowGeo,glowMat);
+S.add(glow);
+
+// Rings
+const rings=[];
+[1.8,2.2,2.6].forEach((r,i)=>{
+  const rg=new THREE.TorusGeometry(r,0.015,16,64);
+  const rm=new THREE.MeshBasicMaterial({color:0x0af,transparent:true,opacity:0.2-i*0.05});
+  const ring=new THREE.Mesh(rg,rm);
+  ring.rotation.x=Math.PI/3+i*0.4;
+  ring.rotation.y=i*0.7;
+  S.add(ring);
+  rings.push(ring);
+});
+
+// Particles
+const pCount=300;
+const pos=new Float32Array(pCount*3);
+const sizes=new Float32Array(pCount);
+const speeds=[];
+for(let i=0;i<pCount;i++){
+  const theta=Math.random()*Math.PI*2,phi=Math.acos(2*Math.random()-1);
+  const r=2+Math.random()*3;
+  pos[i*3]=Math.sin(phi)*Math.cos(theta)*r;
+  pos[i*3+1]=Math.sin(phi)*Math.sin(theta)*r;
+  pos[i*3+2]=Math.cos(phi)*r;
+  sizes[i]=0.01+Math.random()*0.03;
+  speeds.push({theta:0.001+Math.random()*0.003,phi:0.001+Math.random()*0.003});
+}
+const pGeo=new THREE.BufferGeometry();
+pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+pGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
+const pMat=new THREE.PointsMaterial({color:0x4488ff,size:0.03,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending});
+const pSys=new THREE.Points(pGeo,pMat);
+S.add(pSys);
+
+// ══ STATE ═════════════════════════════════════════════════════
+let state='sleeping'; // sleeping|listening|thinking|speaking
+let clapCooldown=0;
+let audioCtx=null,analyser=null,micStream=null;
+let recognition=null,synth=window.speechSynthesis;
+let responseTimeout=null;
+const logEl=document.getElementById('logs');
+const statusEl=document.getElementById('status');
+const transcriptEl=document.getElementById('transcript');
+const responseEl=document.getElementById('response');
+const clapHint=document.getElementById('clapHint');
+const waveBar=document.getElementById('waveBar');
+
+// ══ JOKES ═════════════════════════════════════════════════════
+const JOKES=[
+  "Why did the scarecrow win an award? Because he was outstanding in his field!",
+  "I told my computer I needed a break. Now it won't stop sending me vacation ads.",
+  "Why don't scientists trust atoms? Because they make up everything!",
+  "What do you call a fake noodle? An impasta!",
+  "Why did the math book look so sad? Because it had too many problems.",
+  "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
+  "Why don't eggs tell jokes? They'd crack each other up.",
+  "I'm reading a book on anti-gravity. It's impossible to put down!",
+  "What do you call a bear with no teeth? A gummy bear.",
+  "Why did the bicycle fall over? Because it was two-tired!"
+];
+
+// ══ COMMANDS ══════════════════════════════════════════════════
+function processCommand(text){
+  const t=text.toLowerCase().trim();
+  const log=document.getElementById('logs');
+  
+  // Time / Date
+  if(/time|what.*clock|current time/i.test(t)){
+    const now=new Date();
+    const timeStr=now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    respond(`It's ${timeStr}.`);
+    return;
+  }
+  if(/date|what.*day|today.*date/i.test(t)){
+    const now=new Date();
+    const dateStr=now.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    respond(`Today is ${dateStr}.`);
+    return;
+  }
+  
+  // Greetings
+  if(/^(hello|hey|hi|yo|sup|howdy)/i.test(t)){
+    const greets=['Hello, sir. How may I assist you?','Greetings. At your service.','Hey there. What can I do for you?','Hello! I\'m here to help.'];
+    respond(greets[Math.floor(Math.random()*greets.length)]);
+    return;
+  }
+  
+  // Who are you / who made you
+  if(/who (are you|made you|created you)|what.*(your name|are you)/i.test(t)){
+    respond("I am J.A.R.V.I.S, your AI assistant. I was created to help you with tasks, answer questions, and control your digital environment. Just like Tony Stark's assistant, but running in your browser.");
+    return;
+  }
+  
+  // What can you do / help
+  if(/what (can you do|are you.*do)|help|capabilities|features/i.test(t)){
+    respond("I can tell you the time and date, open websites, search the web, tell jokes, and respond to your voice commands. Just clap to wake me, then speak your request.");
+    return;
+  }
+  
+  // Joke
+  if(/joke|funny|make me laugh|humor/i.test(t)){
+    respond(JOKES[Math.floor(Math.random()*JOKES.length)]);
+    return;
+  }
+  
+  // Thanks
+  if(/thank|thanks|appreciate/i.test(t)){
+    respond("You're welcome, sir. Is there anything else I can help with?");
+    return;
+  }
+  
+  // Goodbye
+  if(/bye|goodbye|see you|exit|quit|go away/i.test(t)){
+    respond("Goodbye, sir. I'll be here when you need me.");
+    setTimeout(()=>setState('sleeping'),2000);
+    return;
+  }
+  
+  // Open website
+  const openMatch=t.match(/open\s+(.+)/);
+  if(openMatch){
+    const site=openMatch[1].trim().toLowerCase();
+    const urls={
+      'youtube':'https://youtube.com',
+      'google':'https://google.com',
+      'gmail':'https://mail.google.com',
+      'github':'https://github.com',
+      'reddit':'https://reddit.com',
+      'twitter':'https://twitter.com',
+      'facebook':'https://facebook.com',
+      'instagram':'https://instagram.com',
+      'netflix':'https://netflix.com',
+      'spotify':'https://spotify.com',
+      'amazon':'https://amazon.com',
+      'wikipedia':'https://wikipedia.org',
+      'stack overflow':'https://stackoverflow.com',
+      'chatgpt':'https://chat.openai.com',
+      'claude':'https://claude.ai',
+      'perplexity':'https://perplexity.ai',
+    };
+    const url=urls[site]||`https://${site.replace(/\s/g,'')}.com`;
+    respond(`Opening ${site}.`);
+    window.open(url,'_blank');
+    return;
+  }
+  
+  // Search
+  if(/^(search|find|look up|google|what is|who is|tell me about)\s+(.+)/i.test(t)){
+    const query=t.replace(/^(search|find|look up|google|what is|who is|tell me about)\s+/i,'');
+    respond(`Searching for ${query}.`);
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`,'_blank');
+    return;
+  }
+  
+  // Weather
+  if(/weather|temperature|forecast/i.test(t)){
+    const cityMatch=t.match(/in\s+([a-z\s]+)/i);
+    const city=cityMatch?cityMatch[1].trim():'';
+    respond(city?`Checking weather for ${city}.`:`Checking your local weather.`);
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(city?`weather in ${city}`:'weather')}`,'_blank');
+    return;
+  }
+  
+  // Calculate
+  if(/calculate|what.*(is|are)|compute|solve/i.test(t)){
+    const calcMatch=t.match(/(\d+[\s]*[+\-*/][\s]*\d+)/);
+    if(calcMatch){
+      try{
+        const result=eval(calcMatch[1]);
+        respond(`The result is ${result}.`);
+      }catch(e){respond("I'm sorry, I couldn't calculate that.");}
+      return;
+    }
+  }
+  
+  // Fallback
+  respond("I'm not sure I understand that command. Try saying 'help' to see what I can do, or 'search' followed by what you're looking for.");
+}
+
+// ══ RESPONSE ══════════════════════════════════════════════════
+function respond(text){
+  setState('speaking');
+  responseEl.textContent=text;
+  responseEl.style.opacity='1';
+  
+  // Speak
+  if(synth.speaking)synth.cancel();
+  const utter=new SpeechSynthesisUtterance(text);
+  utter.rate=0.92;utter.pitch=1.05;
+  utter.onend=()=>{
+    if(state==='speaking'){
+      setTimeout(()=>{setState('sleeping');},1500);
+    }
+  };
+  synth.speak(utter);
+  
+  // Log
+  const d=document.createElement('div');
+  d.textContent=`JARVIS > ${text}`;
+  d.style.color='rgba(0,170,255,0.4)';
+  logEl.appendChild(d);
+  logEl.scrollTop=logEl.scrollHeight;
+  if(logEl.children.length>20)logEl.removeChild(logEl.firstChild);
+}
+
+// ══ STATE MANAGEMENT ══════════════════════════════════════════
+function setState(s){
+  state=s;
+  statusEl.className='';
+  switch(s){
+    case 'sleeping':
+      statusEl.textContent='CLAP TO WAKE';
+      statusEl.className='';
+      clapHint.style.opacity='1';
+      transcriptEl.textContent='';
+      responseEl.style.opacity='0';
+      break;
+    case 'listening':
+      statusEl.textContent='LISTENING';
+      statusEl.className='listening';
+      clapHint.style.opacity='0';
+      transcriptEl.textContent='Speak your command...';
+      transcriptEl.className='';
+      break;
+    case 'thinking':
+      statusEl.textContent='PROCESSING';
+      statusEl.className='active';
+      break;
+    case 'speaking':
+      statusEl.textContent='SPEAKING';
+      statusEl.className='speaking';
+      break;
+  }
+}
+
+// ══ CLAP DETECTION ═══════════════════════════════════════════
+async function initAudio(){
+  if(audioCtx)return;
+  try{
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    micStream=stream;
+    const src=audioCtx.createMediaStreamSource(stream);
+    const hp=audioCtx.createBiquadFilter();
+    hp.type='highpass';hp.frequency.value=2000;
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=512;
+    src.connect(hp);hp.connect(analyser);
+    
+    // Clap detection loop
+    const data=new Uint8Array(analyser.fftSize);
+    let avg=0;
+    const clapThreshold=40;
+    const minInterval=1200;
+    
+    function detectClap(){
+      analyser.getByteTimeDomainData(data);
+      let sum=0,max=0;
+      for(let i=0;i<data.length;i++){
+        const v=Math.abs(data[i]-128);
+        sum+=v;if(v>max)max=v;
+      }
+      const rms=sum/data.length;
+      const energy=max;
+      
+      // Update waveform
+      waveBar.style.width=Math.min(100,energy*1.5)+'%';
+      waveBar.style.background=energy>clapThreshold?'linear-gradient(90deg,#0af,#4df)':'linear-gradient(90deg,rgba(0,170,255,0.2),rgba(68,221,255,0.2))';
+      
+      // Smooth average
+      avg=avg*0.9+rms*0.1;
+      
+      if(state==='sleeping'&&energy>clapThreshold&&rms>avg*1.8&&Date.now()-clapCooldown>minInterval){
+        clapCooldown=Date.now();
+        wakeUp();
+      }
+      
+      requestAnimationFrame(detectClap);
+    }
+    detectClap();
+    statusEl.textContent='CLAP TO WAKE';
+  }catch(e){
+    statusEl.textContent='MIC ACCESS DENIED';
+    console.error('Audio init error:',e);
+  }
+}
+
+// ══ WAKE & LISTEN ════════════════════════════════════════════
+function wakeUp(){
+  setState('listening');
+  const utter=new SpeechSynthesisUtterance("How can I help you?");
+  utter.rate=0.92;utter.pitch=1.05;
+  synth.speak(utter);
+  startListening();
+}
+
+let recognitionActive=false;
+
+function startListening(){
+  if(recognitionActive)return;
+  const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec){transcriptEl.textContent='Speech recognition not supported in this browser.';return;}
+  
+  recognition=new SpeechRec();
+  recognition.continuous=false;
+  recognition.interimResults=true;
+  recognition.lang='en-US';
+  recognitionActive=true;
+  
+  recognition.onresult=(e)=>{
+    let final='',interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    if(interim){transcriptEl.textContent=interim;transcriptEl.className='highlight';}
+    if(final){
+      transcriptEl.textContent=final;
+      transcriptEl.className='highlight';
+      const d=document.createElement('div');
+      d.textContent=`You > ${final}`;
+      d.style.color='rgba(255,255,255,0.2)';
+      logEl.appendChild(d);
+      if(logEl.children.length>20)logEl.removeChild(logEl.firstChild);
+      setState('thinking');
+      recognitionActive=false;
+      setTimeout(()=>processCommand(final),500);
+    }
+  };
+  
+  recognition.onerror=(e)=>{
+    console.error('Speech error:',e.error);
+    recognitionActive=false;
+    if(e.error==='no-speech'){setState('sleeping');return;}
+    if(e.error!='aborted'){
+      setState('sleeping');
+      transcriptEl.textContent='Error: '+e.error;
+    }
+  };
+  
+  recognition.onend=()=>{
+    recognitionActive=false;
+    if(state==='listening')setState('sleeping');
+  };
+  
+  try{recognition.start();}catch(e){recognitionActive=false;}
+}
+
+// Stop listening
+function stopListening(){
+  if(recognition){
+    try{recognition.stop();}catch(e){}
+    recognitionActive=false;
+  }
+}
+
+// ══ ANIMATION ════════════════════════════════════════════════
+let t=0;
+function animate(time){
+  requestAnimationFrame(animate);
+  t+=0.01;
+  
+  const stateColors={sleeping:0x0af,listening:0x44ddff,thinking:0x8844ff,speaking:0x44ff44};
+  const color=stateColors[state]||0x0af;
+  const intensity={sleeping:0.12,listening:0.4,thinking:0.5,speaking:0.35}[state]||0.15;
+  const opacity={sleeping:0.7,listening:0.95,thinking:0.9,speaking:0.85}[state]||0.7;
+  
+  // Animate orb
+  orb.material.color.setHex(color);
+  orb.material.emissive.setHex(color);
+  orb.material.emissiveIntensity=intensity+Math.sin(t*2)*0.05;
+  orb.material.opacity=opacity;
+  orb.scale.setScalar(1+Math.sin(t*1.5)*0.02);
+  
+  // Shell
+  shell.material.color.setHex(color);
+  shell.material.opacity={sleeping:0.08,listening:0.2,thinking:0.25,speaking:0.15}[state]||0.08;
+  shell.rotation.x+=0.003;
+  shell.rotation.y+=0.005;
+  
+  // Glow
+  glow.material.color.setHex(color);
+  glow.material.opacity={sleeping:0.05,listening:0.15,thinking:0.2,speaking:0.12}[state]||0.05;
+  glow.scale.setScalar(1+Math.sin(t*2)*0.05);
+  
+  // Rings
+  rings.forEach((ring,i)=>{
+    ring.material.color.setHex(color);
+    const speed=[0.005,0.008,0.012][i];
+    const baseOpacity=[0.15,0.1,0.06][i];
+    ring.material.opacity=baseOpacity*(state==='sleeping'?0.5:1)+Math.sin(t+i)*0.03;
+    ring.rotation.x+=speed*0.7;
+    ring.rotation.y+=speed;
+    if(state==='listening'||state==='thinking'){
+      ring.rotation.x+=0.01;
+      ring.rotation.y+=0.015;
+    }
+  });
+  
+  // Particles
+  const pp=pSys.geometry.attributes.position.array;
+  for(let i=0;i<pCount;i++){
+    const idx=i*3;
+    const theta=Math.atan2(pp[idx+1],pp[idx]);
+    const phi=Math.acos(pp[idx+2]/Math.sqrt(pp[idx]**2+pp[idx+1]**2+pp[idx+2]**2));
+    const r=Math.sqrt(pp[idx]**2+pp[idx+1]**2+pp[idx+2]**2);
+    const ns=speeds[i];
+    const newTheta=theta+ns.theta;
+    const newPhi=phi+ns.phi;
+    pp[idx]=Math.sin(newPhi)*Math.cos(newTheta)*r;
+    pp[idx+1]=Math.sin(newPhi)*Math.sin(newTheta)*r;
+    pp[idx+2]=Math.cos(newPhi)*r;
+  }
+  pSys.geometry.attributes.position.needsUpdate=true;
+  
+  // Light
+  bl.color.setHex(color);
+  bl.intensity=0.3+Math.sin(t*2)*0.1;
+  
+  // Camera subtle movement
+  C.position.x=Math.sin(t*0.2)*0.3;
+  C.position.y=Math.cos(t*0.15)*0.2;
+  C.lookAt(0,0,0);
+  
+  R.render(S,C);
+}
+
+// ══ MANUAL ACTIVATION ════════════════════════════════════════
+// Click mic button to manually activate
+document.getElementById('micBtn').addEventListener('click',()=>{
+  if(!audioCtx)initAudio();
+  if(state==='listening'||state==='thinking'||state==='speaking'){
+    stopListening();setState('sleeping');
+    if(synth.speaking)synth.cancel();
+  }else{
+    wakeUp();
+  }
+});
+
+// Click anywhere to init audio on first interaction
+document.addEventListener('click',()=>{
+  if(!audioCtx){initAudio();statusEl.textContent='CLAP TO WAKE';}
+},{once:true});
+
+// ══ RESIZE ════════════════════════════════════════════════════
+window.addEventListener('resize',()=>{
+  C.aspect=innerWidth/innerHeight;
+  C.updateProjectionMatrix();
+  R.setSize(innerWidth,innerHeight);
+});
+
+// ══ START ═════════════════════════════════════════════════════
+statusEl.textContent='CLICK TO START';
+clapHint.innerHTML='<b>👏</b>CLICK ANYWHERE TO START';
+animate(0);
+</script>
+</body>
+</html>
